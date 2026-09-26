@@ -192,7 +192,7 @@ export default function DisciplineReportModal({
 
     const fallbackPhoto = 'https://i.imgur.com/GckSf3v.png';
     const photoToDisplay = studentPhotoUrl || (student?.photoUrl && typeof student.photoUrl === 'string' && !student.photoUrl.includes('GckSf3v') ? student.photoUrl : null);
-    const schoolLogoUrl = (settings as any)?.logo || (settings as any)?.schoolLogo || "https://i.imgur.com/LTFGMH7.png";
+    const schoolLogoUrl = (settings as any)?.logo || (settings as any)?.schoolLogo || "https://i.imgur.com/pW7R8ot.jpeg";
 
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">

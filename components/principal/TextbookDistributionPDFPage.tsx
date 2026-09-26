@@ -94,9 +94,7 @@ export default function TextbookDistributionPDFPage({
                             {ministryLogo ? (
                                 <img src={ministryLogo} alt="وزارة التربية" className="w-8 h-8 object-contain" />
                             ) : null}
-                            {schoolLogo ? (
-                                <img src={schoolLogo} alt="المدرسة" className="w-8 h-8 object-contain rounded-full border border-gray-300" />
-                            ) : null}
+                            <img src={schoolLogo || "https://i.imgur.com/pW7R8ot.jpeg"} alt="المدرسة" className="w-8 h-8 object-contain rounded-full border border-gray-300" />
                         </div>
                         <span className="text-[10px] font-bold bg-gray-100 px-2 py-0.5 rounded border border-gray-400">
                             صفحة ({pageNumber}) من ({totalPages})

@@ -25,7 +25,7 @@ const MonthlyStatsPage = ({ settings, classData, students, subjects, startIndex,
                     <div className="flex gap-6 items-center mb-2">
                         {logos.ministry && <img src={logos.ministry} className="h-20 object-contain" referrerPolicy="no-referrer" />}
                         <h1 className="text-3xl font-black text-cyan-900 text-center leading-tight">سجل الإحصائيات الشهري<br/><span className="text-xl text-cyan-700">(بدون درجات)</span></h1>
-                        {logos.school && <img src={logos.school} className="h-20 object-contain" referrerPolicy="no-referrer" />}
+                        <img src={logos.school || "https://i.imgur.com/pW7R8ot.jpeg"} className="h-20 object-contain rounded-full" referrerPolicy="no-referrer" />
                     </div>
                     <p className="text-md font-bold bg-cyan-100 px-6 py-1 rounded-full border-2 border-cyan-200 text-cyan-900">للعام الدراسي: {settings.academicYear}</p>
                 </div>

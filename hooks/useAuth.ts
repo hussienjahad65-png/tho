@@ -6,9 +6,9 @@ import { db, auth, firebase } from '../lib/firebase.ts';
 const PRINCIPAL_USER: User = {
     id: 'principal_al_hamza',
     role: 'principal',
-    name: 'تحسين هارون مهدي حمد',
+    name: 'ثامر جاسم محمد حبل الحجامي',
     schoolName: 'متوسطة الحمزة للبنين',
-    schoolLevel: 'متوسطة',
+    schoolLevel: 'ابتدائية',
     code: 'Qp!@#8070',
     studentCodeLimit: 1000
 };
@@ -26,6 +26,15 @@ export default function useAuth() {
                 if (parsedUser.role === 'admin') {
                     window.localStorage.removeItem('current_user');
                     return null;
+                }
+                if (parsedUser.role === 'principal') {
+                    const updatedPrincipal = {
+                        ...parsedUser,
+                        name: PRINCIPAL_USER.name,
+                        schoolLevel: PRINCIPAL_USER.schoolLevel,
+                    };
+                    window.localStorage.setItem('current_user', JSON.stringify(updatedPrincipal));
+                    return updatedPrincipal;
                 }
                 return parsedUser;
             } catch {

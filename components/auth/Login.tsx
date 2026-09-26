@@ -33,7 +33,7 @@ export default function Login({ onLogin, isAuthReady = true }: LoginProps) {
         <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4" style={{ fontFamily: "'Cairo', sans-serif" }}>
             <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 space-y-8">
                 <div className="text-center">
-                    <img src="https://i.imgur.com/LTFGMH7.png" alt="شعار متوسطة الحمزة للبنين" className="mx-auto w-40 h-40 mb-4 object-contain" />
+                    <img src="https://i.imgur.com/pW7R8ot.jpeg" alt="شعار المدرسة" className="mx-auto w-40 h-40 mb-4 object-contain rounded-full shadow-md" />
                     <h1 className="text-4xl font-extrabold text-gray-800">
                         ادارة متوسطة الحمزة للبنين
                     </h1>

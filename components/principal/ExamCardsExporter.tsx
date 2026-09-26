@@ -26,7 +26,7 @@ export default function ExamCardsExporter({ settings }: ExamCardsExporterProps) 
     const [exportProgress, setExportProgress] = useState(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const isButtonEnabled = settings.schoolLevel === 'متوسطة';
+    const isButtonEnabled = settings.schoolLevel === 'متوسطة' || settings.schoolLevel === 'ابتدائية';
 
     const handleFileSelect = () => {
         fileInputRef.current?.click();

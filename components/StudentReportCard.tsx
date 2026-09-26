@@ -123,7 +123,7 @@ export default function StudentReportCard({
     };
 
     const renderLogo = (logo: string | null, defaultText: string) => {
-        const finalLogo = logo || (defaultText?.includes('مدرسة') ? "https://i.imgur.com/LTFGMH7.png" : null);
+        const finalLogo = logo || (defaultText?.includes('مدرسة') ? "https://i.imgur.com/pW7R8ot.jpeg" : null);
         return (
             <div className="h-24 w-24 flex items-center justify-center rounded-full bg-white p-1 shadow-sm overflow-hidden">
                 {finalLogo ? <img src={finalLogo} alt={defaultText} className="h-full w-full object-contain" /> : <span className="text-[10pt] font-bold text-gray-300">{defaultText}</span>}

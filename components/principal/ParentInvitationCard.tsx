@@ -36,7 +36,7 @@ export default function ParentInvitationCard({ student, classData, settings, mee
                 <p className="text-xl font-bold" style={{ marginBottom: '35px' }}>ادارة : {settings.schoolName}</p>
                 
                  <div className="mx-auto bg-white/50 rounded-full w-24 h-24 flex items-center justify-center p-1" style={{ position: 'relative', top: '15px' }}>
-                    <img src={schoolLogo || "https://i.imgur.com/LTFGMH7.png"} alt="شعار" className="w-full h-full object-contain rounded-full" />
+                    <img src={schoolLogo || "https://i.imgur.com/pW7R8ot.jpeg"} alt="شعار" className="w-full h-full object-contain rounded-full" />
                 </div>
             </div>
 

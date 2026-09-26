@@ -57,7 +57,7 @@ export default function OralExamListPage({ settings, logos, students, classData,
 
                 <div className="w-1/4 flex flex-col items-center">
                     <div className="w-16 h-16 border-2 border-black rounded-full flex items-center justify-center mb-1">
-                        {logos.school ? <img src={logos.school} alt="شعار المدرسة" className="h-full w-full object-contain p-1 rounded-full" /> : <img src="https://i.imgur.com/LTFGMH7.png" alt="شعار المدرسة" className="h-full w-full object-contain p-1 rounded-full" />}
+                        {logos.school ? <img src={logos.school} alt="شعار المدرسة" className="h-full w-full object-contain p-1 rounded-full" /> : <img src="https://i.imgur.com/pW7R8ot.jpeg" alt="شعار المدرسة" className="h-full w-full object-contain p-1 rounded-full" />}
                     </div>
                     <p className="text-xs font-bold">{settings.schoolName}</p>
                 </div>

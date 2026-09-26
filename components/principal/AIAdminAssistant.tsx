@@ -39,7 +39,7 @@ const LetterPDFTemplate = ({
     settings: SchoolSettings; 
     showWatermark: boolean; 
 }) => {
-    const schoolLogo = "https://i.imgur.com/LTFGMH7.png";
+    const schoolLogo = "https://i.imgur.com/pW7R8ot.jpeg";
     const ministryLogo = "https://i.imgur.com/JNUggOC.png";
 
     return (

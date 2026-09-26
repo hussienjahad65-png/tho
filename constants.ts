@@ -14,7 +14,7 @@ export const GOVERNORATES = [
 
 export const DEFAULT_SCHOOL_SETTINGS: SchoolSettings = {
     schoolName: '',
-    principalName: '',
+    principalName: 'ثامر جاسم محمد حبل الحجامي',
     academicYear: '2025-2026',
     directorate: '',
     supplementarySubjectsCount: 3,
@@ -23,7 +23,7 @@ export const DEFAULT_SCHOOL_SETTINGS: SchoolSettings = {
     principalPhone: '',
     schoolType: 'نهاري',
     schoolGender: 'بنين',
-    schoolLevel: 'متوسطة',
+    schoolLevel: 'ابتدائية',
     governorateCode: '',
     schoolCode: '',
     governorateName: 'بغداد',

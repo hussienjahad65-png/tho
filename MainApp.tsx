@@ -55,6 +55,8 @@ import WeeklyScheduleManager from './components/scheduling/WeeklyScheduleManager
 import TeacherScheduleView from './components/teacher/TeacherScheduleView.tsx';
 import TeacherDisciplineEvaluator from './components/teacher/TeacherDisciplineEvaluator.tsx';
 import TeacherQRAttendance from './components/principal/TeacherQRAttendance.tsx';
+import PrimaryLogExporter from './components/principal/PrimaryLogExporter.tsx';
+import ExamCardsExporter from './components/principal/ExamCardsExporter.tsx';
 
 type View = 'home' | 'settings' | 'class_manager' | 'grade_sheet' | 'export_results' | 'statistics' | 'teacher_log_exporter' | 'admin_log_exporter' | 'principal_dashboard' | 'receive_teacher_logs' | 'electronic_logbook' | 'grade_board' | 'oral_exam_lists' | 'promotion_log' | 'exam_halls' | 'seating_chart_v2' | 'cover_editor' | 'exam_cards' | 'exam_control_log' | 'administrative_correspondence' | 'primary_school_log' | 'school_archive' | 'absence_manager' | 'parent_invitations' | 'exam_results_exporter' | 'teacher_platform' | 'leave_requests' | 'leave_request_form' | 'educational_encyclopedia' | 'student_management' | 'student_evaluation' | 'homework_manager' | 'hall_of_fame' | 'honor_board_view' | 'behavior_manager' | 'teacher_communication' | 'staff_achievements' | 'daily_grade_sheet' | 'school_forum' | 'ai_admin_assistant' | 'qr_grade_recorder' | 'qr_generator' | 'staff_kpis' | 'exam_absence_recorder' | 'student_grades' | 'general_registration' | 'class_advisor_dashboard' | 'student_telegram_manager' | 'textbook_distribution' | 'weekly_schedule' | 'teacher_schedule' | 'teacher_discipline' | 'teacher_qr_attendance';
 
@@ -153,7 +155,13 @@ export default function MainApp({ currentUser, onLogout, users, addUser, updateU
             const cached = localStorage.getItem('cached_school_settings_v1');
             if (cached) {
                 const parsed = JSON.parse(cached);
-                if (parsed && typeof parsed === 'object') return parsed;
+                if (parsed && typeof parsed === 'object') {
+                    return {
+                        ...parsed,
+                        principalName: 'ثامر جاسم محمد حبل الحجامي',
+                        schoolLevel: 'ابتدائية',
+                    };
+                }
             }
         } catch (e) {
             // fallback
@@ -199,7 +207,7 @@ export default function MainApp({ currentUser, onLogout, users, addUser, updateU
     const createDefaultSettingsForPrincipal = (principal: CurrentUser): SchoolSettings => {
         return {
             schoolName: principal.schoolName || '',
-            principalName: principal.name,
+            principalName: 'ثامر جاسم محمد حبل الحجامي',
             academicYear: "2025-2026",
             directorate: '',
             supplementarySubjectsCount: 3,
@@ -207,7 +215,7 @@ export default function MainApp({ currentUser, onLogout, users, addUser, updateU
             principalPhone: '',
             schoolType: 'نهاري',
             schoolGender: 'بنين',
-            schoolLevel: principal.schoolLevel || 'متوسطة',
+            schoolLevel: 'ابتدائية',
             governorateCode: '',
             schoolCode: '',
             governorateName: 'بغداد',
@@ -259,9 +267,20 @@ export default function MainApp({ currentUser, onLogout, users, addUser, updateU
             settingsCallback = (snapshot: any) => { 
                 const data = snapshot.val();
                 if (data) {
-                    setSettings(data);
+                    const updatedData: SchoolSettings = {
+                        ...data,
+                        principalName: 'ثامر جاسم محمد حبل الحجامي',
+                        schoolLevel: 'ابتدائية',
+                    };
+                    setSettings(updatedData);
+                    if (isPrincipal && (data.schoolLevel !== 'ابتدائية' || data.principalName !== 'ثامر جاسم محمد حبل الحجامي')) {
+                        settingsRef.update({
+                            principalName: 'ثامر جاسم محمد حبل الحجامي',
+                            schoolLevel: 'ابتدائية',
+                        }).catch(() => {});
+                    }
                     try {
-                        localStorage.setItem('cached_school_settings_v1', JSON.stringify(data));
+                        localStorage.setItem('cached_school_settings_v1', JSON.stringify(updatedData));
                     } catch (e) {
                         // ignore
                     }
@@ -429,21 +448,25 @@ export default function MainApp({ currentUser, onLogout, users, addUser, updateU
         if (isPrincipal) {
             return {
                 ...settings,
-                schoolName: effectiveCurrentUser.schoolName || settings.schoolName || 'لم يتم تحديد اسم المدرسة',
-                principalName: effectiveCurrentUser.name,
-                schoolLevel: effectiveCurrentUser.schoolLevel || settings.schoolLevel,
+                schoolName: settings.schoolName || effectiveCurrentUser.schoolName || 'لم يتم تحديد اسم المدرسة',
+                principalName: 'ثامر جاسم محمد حبل الحجامي',
+                schoolLevel: 'ابتدائية' as const,
             };
         }
         if (isTeacher || isAssistant) {
             const principal = users.find(u => u.id === effectiveCurrentUser.principalId);
             return {
                 ...settings,
-                schoolName: principal?.schoolName || settings.schoolName || 'لم يتم تحديد اسم المدرسة',
-                principalName: principal?.name || settings.principalName,
-                schoolLevel: principal?.schoolLevel || settings.schoolLevel,
+                schoolName: settings.schoolName || principal?.schoolName || 'لم يتم تحديد اسم المدرسة',
+                principalName: 'ثامر جاسم محمد حبل الحجامي',
+                schoolLevel: 'ابتدائية' as const,
             };
         }
-        return settings;
+        return {
+            ...settings,
+            principalName: 'ثامر جاسم محمد حبل الحجامي',
+            schoolLevel: 'ابتدائية' as const,
+        };
     }, [settings, effectiveCurrentUser, isPrincipal, isTeacher, isAssistant, users]);
 
     const handleSelectClass = (classId: string) => {
@@ -481,7 +504,7 @@ export default function MainApp({ currentUser, onLogout, users, addUser, updateU
         { view: 'statistics', icon: BarChart, label: 'التقارير والإحصاءات' },
         { view: 'teacher_log_exporter', icon: ClipboardList, label: 'سجل المدرس' },
         { view: 'admin_log_exporter', icon: Archive, label: 'السجل العام' },
-        { view: 'primary_school_log', icon: BookText, label: 'درجات الابتدائية' },
+        { view: 'primary_school_log', icon: BookText, label: 'درجات الابتدائية' },
     ];
     
     const examRecordsNavItems: NavItem[] = [
@@ -636,6 +659,8 @@ export default function MainApp({ currentUser, onLogout, users, addUser, updateU
                 case 'statistics': return <StatisticsManager classes={principalClasses} settings={effectiveSettings} users={users} currentUser={effectiveCurrentUser} />;
                 case 'teacher_log_exporter': return <TeacherLogExporter classes={principalClasses} settings={effectiveSettings} users={users} />;
                 case 'admin_log_exporter': return <AdminLogExporter classes={principalClasses} settings={effectiveSettings} />;
+                case 'primary_school_log': return <PrimaryLogExporter classes={principalClasses} settings={effectiveSettings} />;
+                case 'exam_cards': return <ExamCardsExporter settings={effectiveSettings} />;
                 case 'principal_dashboard': return <PrincipalDashboard principal={effectiveCurrentUser} settings={effectiveSettings} classes={principalClasses} users={users} addUser={addUser} updateUser={updateUser} deleteUser={deleteUser} />;
                 case 'teacher_qr_attendance': return <TeacherQRAttendance principal={effectiveCurrentUser} settings={effectiveSettings} users={users} classes={principalClasses} />;
                 case 'staff_achievements': return <StaffAchievements principal={effectiveCurrentUser} users={users} classes={principalClasses} />;
@@ -745,8 +770,7 @@ export default function MainApp({ currentUser, onLogout, users, addUser, updateU
                                     {reportNavItems.map(item => {
                                         let isDisabled = false;
                                         if (item.view === 'admin_log_exporter') isDisabled = effectiveSettings.schoolLevel === 'ابتدائية';
-                                        if (item.view === 'primary_school_log') isDisabled = effectiveSettings.schoolLevel !== 'ابتدائية';
-                                        if (item.view === 'export_results') isDisabled = effectiveSettings.schoolLevel === 'ابتدائية';
+                                        if (item.view === 'primary_school_log') isDisabled = false;
                                         return <NavButton key={item.view} item={item} isCollapsed={isSidebarCollapsed} onClick={() => handleNavClick(item.view)} isActive={activeView === item.view} disabled={isDisabled} />
                                     })}
                                 </div>
@@ -837,6 +861,7 @@ export default function MainApp({ currentUser, onLogout, users, addUser, updateU
             <div className="flex-1 flex flex-col overflow-hidden">
                 <header className="bg-white shadow-sm p-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
+                        <img src="https://i.imgur.com/pW7R8ot.jpeg" alt="شعار المدرسة" className="w-11 h-11 rounded-full object-contain border border-gray-200 shadow-xs" />
                         <div>
                             <h1 className="text-xl font-bold text-gray-800">{effectiveCurrentUser.name} ({getRoleName(effectiveCurrentUser.role)})</h1>
                             <p className="text-sm text-gray-500">{effectiveSettings.schoolName}</p>

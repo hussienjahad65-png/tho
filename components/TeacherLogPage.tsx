@@ -56,7 +56,7 @@ export default function TeacherLogPage({ settings, logos, pageData, resultsData,
     const { students, classInfo, subjectName, teacherName } = pageData;
 
     const renderLogo = (logo: string | null, defaultText: string) => {
-        const finalLogo = logo || (defaultText?.includes('مدرسة') ? "https://i.imgur.com/LTFGMH7.png" : null);
+        const finalLogo = logo || (defaultText?.includes('مدرسة') ? "https://i.imgur.com/pW7R8ot.jpeg" : null);
         return (
             <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center p-1 overflow-hidden">
                 {finalLogo ? 

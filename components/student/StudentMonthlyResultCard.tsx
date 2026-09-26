@@ -98,7 +98,7 @@ export default function StudentMonthlyResultCard({ student, settings, resultsDat
                         <p className="font-bold text-gray-700">إدارة: {settings.schoolName}</p>
                     </div>
                     <div className="text-center w-1/3">
-                        <img src="https://i.imgur.com/LTFGMH7.png" alt="Logo" className="w-24 h-24 mx-auto mb-2 rounded-full border-2 border-blue-900 shadow-md object-contain" />
+                        <img src="https://i.imgur.com/pW7R8ot.jpeg" alt="Logo" className="w-24 h-24 mx-auto mb-2 rounded-full border-2 border-blue-900 shadow-md object-contain" />
                         <h1 className="text-2xl font-black text-blue-900">بطاقة كشف الدرجات</h1>
                         <div className="bg-yellow-400 text-blue-900 px-6 py-1 rounded-full inline-block font-black mt-2 shadow-sm border border-blue-900/20">
                             الدور الأول

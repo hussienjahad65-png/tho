@@ -27,7 +27,7 @@ export default function Settings({ currentSettings, onSave, currentUser, updateU
     const isAssistant = currentUser.role === 'assistant';
     const canTestTelegram = isPrincipal || isAssistant;
     const isFormDisabled = currentUser.role === 'teacher';
-    const areNameFieldsDisabled = isPrincipal || currentUser.role === 'teacher';
+    const areNameFieldsDisabled = currentUser.role === 'teacher';
 
     const principalId = isPrincipal ? currentUser.id : currentUser.principalId;
 

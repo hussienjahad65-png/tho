@@ -176,8 +176,8 @@ export default function ExamBookletsReceipt({ settings, setCurrentPageKey }: Exa
                     <button onClick={() => setStage('intermediate')} className="w-full text-right p-4 bg-cyan-600 text-white font-bold rounded-lg hover:bg-cyan-700 transition shadow-md flex items-center justify-between">
                         <span>المتوسطة</span>
                     </button>
-                    <button disabled className="w-full text-right p-4 bg-gray-400 text-white font-bold rounded-lg cursor-not-allowed flex items-center justify-between">
-                        <span>الابتدائية</span><span className="text-xs bg-gray-500 px-2 py-1 rounded-full">قريباً</span>
+                    <button onClick={() => setStage('intermediate')} className="w-full text-right p-4 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition shadow-md flex items-center justify-between">
+                        <span>الابتدائية</span>
                     </button>
                     <button disabled className="w-full text-right p-4 bg-gray-400 text-white font-bold rounded-lg cursor-not-allowed flex items-center justify-between">
                         <span>الاعدادية</span><span className="text-xs bg-gray-500 px-2 py-1 rounded-full">قريباً</span>

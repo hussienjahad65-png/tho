@@ -2,14 +2,14 @@
 declare const firebase: any;
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCVjo4V9A51mOvofo7qCEiLAi7RFITzKoU",
-  authDomain: "hmza-5dc41.firebaseapp.com",
-  databaseURL: "https://hmza-5dc41-default-rtdb.firebaseio.com",
-  projectId: "hmza-5dc41",
-  storageBucket: "hmza-5dc41.firebasestorage.app",
-  messagingSenderId: "381700092287",
-  appId: "1:381700092287:web:388c1f30c65ce6ee396a4a",
-  measurementId: "G-294PRJ23BN"
+  apiKey: "AIzaSyA2j3EsitYTy6fIYfObxpzf9LbbwvUeJ38",
+  authDomain: "thoalfgar-ab906.firebaseapp.com",
+  databaseURL: "https://thoalfgar-ab906-default-rtdb.firebaseio.com",
+  projectId: "thoalfgar-ab906",
+  storageBucket: "thoalfgar-ab906.firebasestorage.app",
+  messagingSenderId: "768702267760",
+  appId: "1:768702267760:web:6b67c6b3ac0d69b42acfb5",
+  measurementId: "G-80RGR7B7TQ"
 };
 
 // Use a more robust check for global firebase object

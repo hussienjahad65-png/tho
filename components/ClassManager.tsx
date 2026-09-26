@@ -17,7 +17,7 @@ import {
 
 declare const XLSX: any;
 
-const MINISTERIAL_STAGES = ['الثالث متوسط', 'السادس العلمي', 'السادس الادبي'];
+const MINISTERIAL_STAGES = ['الثالث متوسط', 'السادس العلمي', 'السادس الادبي', 'السادس ابتدائي'];
 
 interface ClassManagerProps {
     classes: ClassData[];
@@ -208,7 +208,8 @@ export default function ClassManager({ classes, onSelectClass, currentUser, teac
                 subjects: ensureDefaultSportsAndArtSubjects(classToEdit.subjects || []),
             });
         } else {
-            const defaultStage = GRADE_LEVELS[6] || GRADE_LEVELS[0];
+            const isPrimary = effectiveSettings.schoolLevel === 'ابتدائية';
+            const defaultStage = isPrimary ? GRADE_LEVELS[0] : (GRADE_LEVELS[6] || GRADE_LEVELS[0]);
             setEditingClass({
                 id: '',
                 stage: defaultStage,

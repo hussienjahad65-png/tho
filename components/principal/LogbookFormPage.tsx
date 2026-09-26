@@ -123,11 +123,15 @@ export default function LogbookFormPage({ settings, pageData, totalStudents, min
                                         درجة المدرسة
                                     </div>
                                     <div className="flex text-center">
-                                        <div className="w-1/2 p-1 border-l-2 border-black">
+                                        <div className="w-1/3 p-1 border-l-2 border-black">
+                                            <div>ابتدائية</div>
+                                            <div className="h-5 flex items-center justify-center">{settings.schoolLevel === 'ابتدائية' ? '✔' : ''}</div>
+                                        </div>
+                                        <div className="w-1/3 p-1 border-l-2 border-black">
                                             <div>ثانوية</div>
                                             <div className="h-5 flex items-center justify-center">{settings.schoolLevel === 'ثانوية' ? '✔' : ''}</div>
                                         </div>
-                                        <div className="w-1/2 p-1">
+                                        <div className="w-1/3 p-1">
                                             <div>متوسطة</div>
                                             <div className="h-5 flex items-center justify-center">{settings.schoolLevel === 'متوسطة' ? '✔' : ''}</div>
                                         </div>

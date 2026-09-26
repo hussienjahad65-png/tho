@@ -90,7 +90,7 @@ export default function GradeBoardPage({ settings, ministryLogo, schoolLogo, stu
                 </div>
 
                 <div className="w-32 flex flex-col items-center">
-                    <img src={schoolLogo || "https://i.imgur.com/LTFGMH7.png"} alt="شعار المدرسة" className="h-28 w-28 object-contain" />
+                    <img src={schoolLogo || "https://i.imgur.com/pW7R8ot.jpeg"} alt="شعار المدرسة" className="h-28 w-28 object-contain" />
                 </div>
             </header>
             

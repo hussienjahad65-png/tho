@@ -67,7 +67,7 @@ export default function SuccessStatsPDFPage({ settings, monthLabel, data, pageNu
                         </div>
 
                         <div className="w-1/4 flex flex-col items-center">
-                            <img src={schoolLogo || "https://i.imgur.com/LTFGMH7.png"} alt="المدرسة" className="w-20 h-20 object-contain rounded-full mb-1" />
+                            <img src={schoolLogo || "https://i.imgur.com/pW7R8ot.jpeg"} alt="المدرسة" className="w-20 h-20 object-contain rounded-full mb-1" />
                             <p className="text-[10pt] font-black text-gray-800">{settings.schoolName}</p>
                         </div>
                     </div>

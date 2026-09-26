@@ -55,7 +55,7 @@ export default function AdminReportCard({ student, classData, settings, studentR
     const { finalCalculatedGrades, result } = studentResultData;
 
     const renderLogo = (logo: string | null, defaultText: string) => {
-        const finalLogo = logo || (defaultText?.includes('مدرسة') ? "https://i.imgur.com/LTFGMH7.png" : null);
+        const finalLogo = logo || (defaultText?.includes('مدرسة') ? "https://i.imgur.com/pW7R8ot.jpeg" : null);
         return (
             <div className="h-40 w-40 flex items-center justify-center text-center text-sm p-1">
                 {finalLogo ? 

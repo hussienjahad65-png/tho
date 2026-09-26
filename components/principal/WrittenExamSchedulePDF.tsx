@@ -25,7 +25,7 @@ export default function WrittenExamSchedulePDF({ settings, config, schedule, sch
             <div className="border-4 p-2 bg-white flex-grow flex flex-col">
                 <div className="flex justify-between items-center text-center p-4">
                     <img src="https://i.imgur.com/JNUggOC.png" alt="شعار الوزارة" className="h-24 w-24 object-contain"/>
-                    <img src={schoolLogo || "https://i.imgur.com/LTFGMH7.png"} alt="School Logo" className="h-24 w-24 object-contain rounded-full border-2 p-1" />
+                    <img src={schoolLogo || "https://i.imgur.com/pW7R8ot.jpeg"} alt="School Logo" className="h-24 w-24 object-contain rounded-full border-2 p-1" />
                     <img src="https://i.imgur.com/nkaYlwI.png" alt="شعار النسر" className="h-24 w-24 object-contain"/>
                 </div>
                 <h2 className="text-2xl font-bold text-center">جدول امتحانات {config.examType}</h2>
