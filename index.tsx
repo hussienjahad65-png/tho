@@ -8,12 +8,15 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
-const root = ReactDOM.createRoot(rootElement);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+if (!(window as any).__APP_MOUNTED__) {
+  (window as any).__APP_MOUNTED__ = true;
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+}
 
 // إخفاء شاشة التحميل فور بدء التنفيذ
 if (typeof (window as any).hideAppLoader === 'function') {
