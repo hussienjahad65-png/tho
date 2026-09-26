@@ -51,8 +51,10 @@ export default function useAuth() {
                 setIsAuthReady(true);
             } else {
                 auth.signInAnonymously().catch((error: any) => {
-                    console.error("Critical: Anonymous sign-in failed.", error);
-                    setAuthError("فشل الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى. قد تمنع بعض الشبكات (مثل شبكات المدارس) الوصول إلى خدماتنا.");
+                    console.warn("Anonymous sign-in notice (continuing without anonymous auth):", error);
+                    // Do not lock out the application if the deployed domain is not yet added
+                    // to Firebase Auth Authorized Domains, as Realtime Database can still operate.
+                    setAuthError(null);
                     setIsAuthReady(true); 
                 });
             }

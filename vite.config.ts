@@ -8,11 +8,14 @@ export default defineConfig({
   server: {
     port: 3000,
     host: '0.0.0.0',
+    allowedHosts: true,
+    hmr: process.env.DISABLE_HMR !== 'true',
+    watch: process.env.DISABLE_HMR === 'true' ? null : {},
   },
   plugins: [react(), tailwindcss()],
   define: {
-    'process.env.API_KEY': JSON.stringify("AIzaSyDsiZmigwNxdmb-6Yqpvi0ZHUv3gGYz12s"),
-    'process.env.GEMINI_API_KEY': JSON.stringify("AIzaSyDsiZmigwNxdmb-6Yqpvi0ZHUv3gGYz12s")
+    'process.env.API_KEY': JSON.stringify(process.env.GEMINI_API_KEY || "AIzaSyDsiZmigwNxdmb-6Yqpvi0ZHUv3gGYz12s"),
+    'process.env.GEMINI_API_KEY': JSON.stringify(process.env.GEMINI_API_KEY || "AIzaSyDsiZmigwNxdmb-6Yqpvi0ZHUv3gGYz12s")
   },
   resolve: {
     alias: {
