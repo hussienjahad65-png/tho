@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import * as ReactDOM from 'react-dom/client';
 import type { User, SchoolSettings, ClassData, StudentSubmission, Announcement, ParentContact, Student, StudentNotification } from '../../types.ts';
 import { db } from '../../lib/firebase.ts';
-import { sendTelegramNotification } from '../../lib/telegram.ts';
 import { v4 as uuidv4 } from 'uuid';
 import RegistrationFormPage1 from './RegistrationFormPage1.tsx';
 import RegistrationFormPage2 from './RegistrationFormPage2.tsx';
@@ -128,19 +127,8 @@ const CodesAndAnnouncements = ({ principal, settings, classes }: { principal: Us
         try {
             await db.ref().update(updates);
 
-            // Send Telegram Notification to School Channel / Group
-            sendTelegramNotification(
-                {
-                    botToken: settings.telegramBotToken,
-                    defaultChatId: settings.telegramDefaultChatId,
-                    enabled: settings.telegramEnabled
-                },
-                settings.telegramDefaultChatId,
-                `<b>📢 إعلان جديد من إدارة المدرسة لـ (${stage})</b>\n\n${message}`
-            );
-
             setNewAnnouncements(prev => ({ ...prev, [stage]: '' }));
-            alert('تم نشر الإعلان وإبلاغ الطلاب عبر النظام والتليكرام بنجاح.');
+            alert('تم نشر الإعلان وإبلاغ الطلاب عبر النظام بنجاح.');
         } catch (error) {
             console.error("Failed to publish announcement:", error);
             alert('حدث خطأ أثناء النشر.');

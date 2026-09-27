@@ -9,7 +9,6 @@ import {
     Info, Calendar, User as UserIcon, HardDrive, Database, Zap
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { sendTelegramNotification, TelegramConfig } from '../../lib/telegram.ts';
 import { DEFAULT_DISCIPLINE_CRITERIA, DEFAULT_DISCIPLINE_MAX_POINTS } from '../../constants.ts';
 import DisciplineReportModal from '../discipline/DisciplineReportModal.tsx';
 import { loadLocalPhotos, saveBulkPhotosLocally, getCachedPhotoSync, populateMemoryCache, getLocalPhotoStats } from '../../lib/photoStorage.ts';
@@ -161,31 +160,11 @@ export default function BehaviorManager({ principal, settings, classes }: Behavi
     const [newCritCategory, setNewCritCategory] = useState<DisciplineCriterion['category']>('سلوكي');
     const [newCritPoints, setNewCritPoints] = useState<number>(1);
 
-    // Telegram State
-    const [sendIndividualTelegram, setSendIndividualTelegram] = useState(true);
-    const [sendGroupTelegram, setSendGroupTelegram] = useState(true);
-    const [customGroupChatId, setCustomGroupChatId] = useState(settings?.telegramDefaultChatId || '');
-    const [isSendingTelegram, setIsSendingTelegram] = useState(false);
-    const [telegramLogModal, setTelegramLogModal] = useState<{ open: boolean; title: string; logs: string[] } | null>(null);
-
     // Report & Archive Modals
     const [reportStudent, setReportStudent] = useState<{ student: Student; classData?: ClassData } | null>(null);
     const [archiveTargetStudent, setArchiveTargetStudent] = useState<{ student: Student; classData?: ClassData } | null>(null);
     const [archiveReasonText, setArchiveReasonText] = useState('حضور ولي أمر الطالب وتوقيع تعهد خطي بالالتزام التام بالنظام المدرسي');
     const [isArchiving, setIsArchiving] = useState(false);
-
-    // Keep customGroupChatId synchronized if settings change
-    useEffect(() => {
-        if (settings?.telegramDefaultChatId) {
-            setCustomGroupChatId(prev => prev || settings.telegramDefaultChatId || '');
-        }
-    }, [settings?.telegramDefaultChatId]);
-
-    const telegramConfig: TelegramConfig = useMemo(() => ({
-        botToken: settings?.telegramBotToken,
-        defaultChatId: customGroupChatId || settings?.telegramDefaultChatId,
-        enabled: settings?.telegramEnabled
-    }), [settings, customGroupChatId]);
 
     // Load Settings, Records, Archives with Local Cache
     useEffect(() => {
@@ -525,48 +504,6 @@ export default function BehaviorManager({ principal, settings, classes }: Behavi
                     isRead: false
                 })
             ]);
-
-            // Handle Telegram Notifications in background
-            if (mode === 'save_and_notify' && settings?.telegramBotToken?.trim()) {
-                if (sendIndividualTelegram && student.telegramChatId?.trim()) {
-                    const chatId = student.telegramChatId.trim();
-                    const indMsg = 
-                        `<b>⚠️ تنبيه انضباط وسلوك طالب</b>\n\n` +
-                        `<b>اسم الطالب:</b> ${student.name}\n` +
-                        `<b>الصف والشعبة:</b> ${selectedClass.stage} / ${selectedClass.section}\n` +
-                        `<b>تاريخ المخالفة:</b> ${newRecord.violationDate}\n` +
-                        `<b>نوع المخالفة:</b> ${reasonTitle}\n` +
-                        `<b>الخصم:</b> خصم (${points}) نقطة (الرصيد المتبقي: ${newCurrentPoints}/${maxPoints})\n\n` +
-                        `نسترعي انتباه ولي الأمر الموقر لمتابعة التزام الطالب بالأنظمة المدرسية.\n\n` +
-                        `<i>إدارة المدرسة - معاونية شؤون الطلبة</i>`;
-
-                    sendTelegramNotification(telegramConfig, chatId, indMsg).then(resInd => {
-                        if (resInd.success) logs.push(`✅ تم إرسال إشعار تليكرام لولي أمر الطالب بنجاح.`);
-                    }).catch(console.error);
-                }
-
-                if (sendGroupTelegram) {
-                    const targetGroupId = customGroupChatId.trim() || settings?.telegramDefaultChatId?.trim();
-                    if (targetGroupId) {
-                        const groupMsg = 
-                            `<b>📢 تنبيه انضباط مدرسي</b>\n\n` +
-                            `<b>اسم الطالب:</b> ${student.name}\n` +
-                            `<b>الصف والشعبة:</b> ${selectedClass.stage} - ${selectedClass.section}\n` +
-                            `<b>المخالفة:</b> ${reasonTitle}\n` +
-                            `<b>تاريخ المخالفة:</b> ${newRecord.violationDate}\n\n` +
-                            `<i>إدارة المدرسة - معاونية شؤون الطلبة</i>`;
-                        sendTelegramNotification(telegramConfig, targetGroupId, groupMsg).catch(console.error);
-                    }
-                }
-            }
-
-            if (mode === 'save_and_notify') {
-                setTelegramLogModal({
-                    open: true,
-                    title: 'تقرير تسجيل المخالفة والإشعارات',
-                    logs
-                });
-            }
         } catch (error) {
             console.error('Failed to record discipline deduction:', error);
             setNotificationToast({
@@ -1213,21 +1150,12 @@ export default function BehaviorManager({ principal, settings, classes }: Behavi
                                                     <div className="flex flex-wrap gap-2 pt-1">
                                                         <button
                                                             type="button"
-                                                            onClick={() => handleDeduct('save_and_notify')}
+                                                            onClick={() => handleDeduct('save_only')}
                                                             disabled={isSubmitting || (!selectedCriterionId && !customReason.trim())}
                                                             className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                                                         >
-                                                            <Send size={15} />
-                                                            <span>{isSubmitting ? 'جاري الرصد...' : 'خصم تراكمي (-1) وإرسال إشعار تليكرام'}</span>
-                                                        </button>
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleDeduct('save_only')}
-                                                            disabled={isSubmitting || (!selectedCriterionId && !customReason.trim())}
-                                                            className="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50"
-                                                        >
-                                                            <span>حفظ بالنظام فقط</span>
+                                                            <Check size={15} />
+                                                            <span>{isSubmitting ? 'جاري الرصد...' : 'رصد المخالفة وخصم (-1) نقطة'}</span>
                                                         </button>
 
                                                         {activeRecords.length > 0 && (
@@ -1765,51 +1693,6 @@ export default function BehaviorManager({ principal, settings, classes }: Behavi
                             >
                                 <Sparkles size={14} />
                                 <span>{isArchiving ? 'جاري الأرشفة...' : 'تأكيد الأرشفة ومنح النقاط'}</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Telegram Result Modal */}
-            {telegramLogModal && telegramLogModal.open && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200">
-                        <div className="bg-slate-900 text-white p-4 flex justify-between items-center">
-                            <div className="flex items-center gap-2 font-bold text-base">
-                                <Send size={18} className="text-cyan-400" />
-                                <span>{telegramLogModal.title}</span>
-                            </div>
-                            <button 
-                                onClick={() => setTelegramLogModal(null)}
-                                className="p-1 hover:bg-slate-800 rounded-full transition-colors cursor-pointer text-slate-300 hover:text-white"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        <div className="p-5 max-h-[60vh] overflow-y-auto space-y-2 text-xs sm:text-sm">
-                            {telegramLogModal.logs.map((log, index) => (
-                                <div 
-                                    key={index} 
-                                    className={`p-2.5 rounded-xl border font-medium text-right ${
-                                        log.startsWith('✅') ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-                                        log.startsWith('❌') ? 'bg-rose-50 text-rose-800 border-rose-200' :
-                                        log.startsWith('⚠️') ? 'bg-amber-50 text-amber-800 border-amber-200' :
-                                        'bg-slate-50 text-slate-700 border-slate-200'
-                                    }`}
-                                >
-                                    {log}
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="bg-slate-100 p-4 text-center border-t">
-                            <button 
-                                onClick={() => setTelegramLogModal(null)}
-                                className="px-6 py-2 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors cursor-pointer text-xs"
-                            >
-                                إغلاق
                             </button>
                         </div>
                     </div>

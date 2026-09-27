@@ -192,7 +192,7 @@ export default function StudentSubmissionForm({ submissionInfo, currentUser, onL
     };
 
     const validateForm = (): boolean => {
-        const { fullName, motherName, fatherPhone, motherPhone, studentPhoneOrTelegram } = formData;
+        const { fullName, motherName, fatherPhone, motherPhone } = formData;
         const errors = [];
 
         if (!studentPhoto) {
@@ -203,9 +203,6 @@ export default function StudentSubmissionForm({ submissionInfo, currentUser, onL
         }
         if (!motherName || !motherName.trim()) {
             errors.push("اسم الام الثلاثي");
-        }
-        if (!studentPhoneOrTelegram || !studentPhoneOrTelegram.trim()) {
-            errors.push("موبايل الطالب المرتبط بالتليكرام او المعرف (حقل إلزامي)");
         }
         if ((!fatherPhone || !fatherPhone.trim()) && (!motherPhone || !motherPhone.trim())) {
             errors.push("رقم هاتف الاب او رقم هاتف الام");

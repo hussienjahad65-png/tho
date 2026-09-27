@@ -7,7 +7,6 @@ import {
     BellRing, MessageSquare, Check, Eye, ShieldAlert, Flame
 } from 'lucide-react';
 import { db } from '../../lib/firebase.ts';
-import { sendTelegramNotification } from '../../lib/telegram.ts';
 import { DEFAULT_DISCIPLINE_CRITERIA, DEFAULT_DISCIPLINE_MAX_POINTS } from '../../constants.ts';
 import DisciplineReportModal from '../discipline/DisciplineReportModal.tsx';
 
@@ -209,30 +208,6 @@ export default function ClassAdvisorDashboard({ teacher, classes, settings }: Cl
         return notes.filter(n => n.category === selectedCategory);
     }, [notes, selectedCategory]);
 
-    // Telegram configuration
-    const telegramConfig = useMemo(() => ({
-        botToken: settings?.telegramBotToken,
-        defaultChatId: settings?.telegramDefaultChatId,
-        enabled: settings?.telegramEnabled
-    }), [settings]);
-
-    const handleSaveStudentTelegramChatId = async (studentId: string, chatId: string) => {
-        if (!advisorClass) return;
-        try {
-            const updatedStudents = (advisorClass.students || []).map(s => {
-                if (s.id === studentId) {
-                    return { ...s, telegramChatId: chatId.trim() };
-                }
-                return s;
-            });
-            await db.ref(`classes/${advisorClass.id}/students`).set(updatedStudents);
-            alert("تم حفظ معرف الشات في التليكرام للطالب بنجاح!");
-        } catch (err) {
-            console.error("Error saving Telegram ID:", err);
-            alert("حدث خطأ أثناء حفظ معرف التليكرام.");
-        }
-    };
-
     // Total unread chats count
     const totalUnreadChats = useMemo(() => {
         return chats.filter(c => c.unreadByAdvisor).length;
@@ -275,23 +250,7 @@ export default function ClassAdvisorDashboard({ teacher, classes, settings }: Cl
                     type: 'advisor_note'
                 });
 
-                // Send Telegram Notification
-                const targetChatId = student.telegramChatId || settings?.telegramDefaultChatId;
-                const tgRes = await sendTelegramNotification(
-                    telegramConfig,
-                    targetChatId,
-                    `<b>📌 ملاحظة إرشادية جديدة من مرشد الصف</b>\n` +
-                    `<b>الطالب:</b> ${student.name}\n` +
-                    `<b>المرشد:</b> الأستاذ/ة ${teacher.name}\n` +
-                    `<b>التصنيف:</b> ${noteCategory}\n` +
-                    `<b>الملاحظة:</b> ${noteContent.trim()}`
-                );
-
-                if (!tgRes.success) {
-                    alert(`تم حفظ الملاحظة وإرسالها لبوابة الطالب، ولكن فشل الإرسال للتليكرام:\n${tgRes.error}`);
-                } else {
-                    alert("تم حفظ الملاحظة وإرسال إشعار للطالب وإرسالها عبر التليكرام بنجاح!");
-                }
+                alert("تم حفظ الملاحظة وإرسال إشعار للطالب بنجاح!");
             } else {
                 alert("تم حفظ الملاحظة الإرشادية بنجاح.");
             }
@@ -323,23 +282,7 @@ export default function ClassAdvisorDashboard({ teacher, classes, settings }: Cl
                 type: 'advisor_note'
             });
 
-            const targetStudent = students.find(s => s.id === note.studentId);
-            const targetChatId = targetStudent?.telegramChatId || settings?.telegramDefaultChatId;
-            const tgRes = await sendTelegramNotification(
-                telegramConfig,
-                targetChatId,
-                `<b>📌 ملاحظة إرشادية مشاركة من مرشد الصف</b>\n` +
-                `<b>الطالب:</b> ${note.studentName}\n` +
-                `<b>المرشد:</b> الأستاذ/ة ${teacher.name}\n` +
-                `<b>التصنيف:</b> ${note.category}\n` +
-                `<b>الملاحظة:</b> ${note.content}`
-            );
-
-            if (!tgRes.success) {
-                alert(`تم إرسال الملاحظة لبوابة الطالب، ولكن تعذر إرسالها للتليكرام:\n${tgRes.error}`);
-            } else {
-                alert(`تم إرسال الملاحظة للطالب (${note.studentName}) وإشعاره بها وعبر التليكرام!`);
-            }
+            alert(`تم إرسال الملاحظة للطالب (${note.studentName}) وإشعاره بها بنجاح!`);
         } catch (err) {
             console.error("Error sending note to student:", err);
             alert("حدث خطأ أثناء إرسال الملاحظة للطالب.");
@@ -403,17 +346,7 @@ export default function ClassAdvisorDashboard({ teacher, classes, settings }: Cl
                 );
                 await Promise.all(notifPromises);
 
-                // Send Telegram Notification
-                sendTelegramNotification(
-                    telegramConfig,
-                    settings?.telegramDefaultChatId,
-                    `<b>📢 توجيه عام للشعبة (${advisorClass.stage} - ${advisorClass.section})</b>\n` +
-                    `<b>مرشد الصف:</b> الأستاذ/ة ${teacher.name}\n` +
-                    `<b>العنوان:</b> ${guidanceTitle.trim()}\n\n` +
-                    `${guidanceContent.trim()}`
-                );
-
-                alert(`تم إرسال التوجيه العام لجميع طلاب الشعبة (${students.length} طالب) وإشعارهم وعبر التليكرام بنجاح!`);
+                alert(`تم إرسال التوجيه العام لجميع طلاب الشعبة (${students.length} طالب) وإشعارهم بنجاح!`);
             } else {
                 // Private guidance to specific student
                 const pId = db.ref().child(`advisor_student_guidance/${principalId}/${guidanceStudentId}`).push().key || `priv_${timestamp}`;
@@ -440,22 +373,7 @@ export default function ClassAdvisorDashboard({ teacher, classes, settings }: Cl
                     type: 'private_guidance'
                 });
 
-                // Send Telegram Notification
-                const targetChatId = selectedStudent?.telegramChatId || settings?.telegramDefaultChatId;
-                const tgRes = await sendTelegramNotification(
-                    telegramConfig,
-                    targetChatId,
-                    `<b>🔒 توجيه خاص للطالب: ${selectedStudent?.name}</b>\n` +
-                    `<b>مرشد الصف:</b> الأستاذ/ة ${teacher.name}\n` +
-                    `<b>العنوان:</b> ${guidanceTitle.trim()}\n\n` +
-                    `${guidanceContent.trim()}`
-                );
-
-                if (!tgRes.success) {
-                    alert(`تم حفظ التوجيه في حساب الطالب، ولكن تعذر الإرسال للتليكرام:\n${tgRes.error}`);
-                } else {
-                    alert(`تم إرسال التوجيه الخاص للطالب (${selectedStudent?.name}) وإشعار به وعبر التليكرام بنجاح!`);
-                }
+                alert(`تم إرسال التوجيه الخاص للطالب (${selectedStudent?.name}) وإشعار به بنجاح!`);
             }
 
             setGuidanceTitle('');
@@ -519,17 +437,6 @@ export default function ClassAdvisorDashboard({ teacher, classes, settings }: Cl
                 read: false,
                 type: 'secret_consultation_reply'
             });
-
-            // Telegram Notification
-            const targetChatId = selectedChatStudent.telegramChatId || settings?.telegramDefaultChatId;
-            sendTelegramNotification(
-                telegramConfig,
-                targetChatId,
-                `<b>💬 رد جديد من مرشد الصف على استشارتك السرية</b>\n` +
-                `<b>الطالب:</b> ${selectedChatStudent.name}\n` +
-                `<b>المرشد:</b> الأستاذ/ة ${teacher.name}\n` +
-                `<b>الرد:</b> ${text}`
-            );
 
             setReplyText('');
         } catch (err) {
@@ -725,27 +632,6 @@ export default function ClassAdvisorDashboard({ teacher, classes, settings }: Cl
                         </div>
                     </div>
 
-                    {/* Telegram Info Box */}
-                    <div className="p-3 bg-sky-50 border border-sky-200 rounded-xl text-xs text-sky-900 space-y-1.5">
-                        <div className="flex items-center gap-2 font-bold text-sky-900 text-sm">
-                            <Sparkles className="w-4 h-4 text-sky-600 flex-shrink-0" />
-                            <span>تعليمات هامة لضمان وصول رسائل التليكرام الفردية للطالب:</span>
-                        </div>
-                        <ul className="list-disc list-inside space-y-1 text-sky-800 font-medium pl-1">
-                            <li>
-                                <b>السبب الأساسي لعدم الوصول باليوزرنيم:</b> قانون شركة تليكرام يمنع البوتات من إرسال رسائل خاصة بالأشخاص عبر اليوزرنيم (<code className="bg-sky-100 px-1 rounded font-mono">@username</code>) للحد من المزعجين، وتتطلب إدخال <b>الآيدي العددي الخاص بالحساب (Numeric Chat ID)</b> مثل: <code className="bg-white px-1.5 py-0.5 rounded border border-sky-300 font-mono text-sky-900">589123456</code>.
-                            </li>
-                            <li>
-                                <b>كيف يحصل الطالب على رقمه العددي (Chat ID)؟</b>
-                                <br />
-                                يفتح الطالب التليكرام ويبحث عن بوت معرفة الآيدي: <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer" className="underline font-bold text-sky-700 hover:text-sky-900">@userinfobot</a> أو <a href="https://t.me/rawdata_bot" target="_blank" rel="noreferrer" className="underline font-bold text-sky-700 hover:text-sky-900">@rawdata_bot</a> ويرسل له رسالة <code className="bg-sky-100 px-1 rounded font-mono">/start</code> وسيظهر له رقمه العددي (Id) فوراً.
-                            </li>
-                            <li>
-                                <b>خطوة تفعيل البوت:</b> يجب أن يرسل الطالب كلمة <code className="bg-sky-100 px-1 rounded font-mono">/start</code> لبوت المدرسة أيضاً حتى يسمح للبوت بمراسلته.
-                            </li>
-                        </ul>
-                    </div>
-
                     {filteredStudents.length > 0 ? (
                         <div className="overflow-x-auto rounded-xl border border-gray-200">
                             <table className="w-full text-right text-sm">
@@ -756,7 +642,6 @@ export default function ClassAdvisorDashboard({ teacher, classes, settings }: Cl
                                         <th className="p-3">الرقم الامتحاني</th>
                                         <th className="p-3">رمز الدخول السرّي</th>
                                         <th className="p-3">نقاط الانضباط</th>
-                                        <th className="p-3">معرف التليكرام</th>
                                         <th className="p-3 text-center">إجراءات المرشد</th>
                                     </tr>
                                 </thead>
@@ -799,18 +684,6 @@ export default function ClassAdvisorDashboard({ teacher, classes, settings }: Cl
                                                     }`}>
                                                         {currentPts} / {disciplineMaxPoints}
                                                     </span>
-                                                </td>
-                                                <td className="p-3">
-                                                    {s.telegramChatId ? (
-                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 text-green-800 text-xs font-mono font-bold rounded-md border border-green-300">
-                                                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                                                            <span>{s.telegramChatId}</span>
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-gray-400 text-xs font-medium italic">
-                                                            غير مرتبط (معاون شؤون الطلبة)
-                                                        </span>
-                                                    )}
                                                 </td>
                                                 <td className="p-3 text-center flex items-center justify-center gap-1.5 flex-wrap">
                                                     <button

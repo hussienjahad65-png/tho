@@ -9,7 +9,7 @@ const PRINCIPAL_USER: User = {
     name: 'ثامر جاسم محمد حبل الحجامي',
     schoolName: 'متوسطة الحمزة للبنين',
     schoolLevel: 'ابتدائية',
-    code: 'Qp!@#8070',
+    code: 'Fwg!&ui70',
     studentCodeLimit: 1000
 };
 

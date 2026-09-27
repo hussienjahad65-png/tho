@@ -64,7 +64,6 @@ export default function StudentApp({ currentUser, onLogout }: StudentAppProps) {
     const [showMoodModal, setShowMoodModal] = useState(false);
     const [studentFormPhoto, setStudentFormPhoto] = useState<string | null>(null);
     const [isFormLocked, setIsFormLocked] = useState<boolean>(false);
-    const [isTelegramLocked, setIsTelegramLocked] = useState<boolean>(false);
 
     // Fetch student form photo and lock status from localStorage or Firebase
     useEffect(() => {
@@ -91,20 +90,6 @@ export default function StudentApp({ currentUser, onLogout }: StudentAppProps) {
             }
         };
         locksRef.on('value', locksCallback);
-
-        const telegramLocksRef = db.ref(`telegram_locks/${principalId}`);
-        const telegramLocksCallback = (snapshot: any) => {
-            if (snapshot.exists()) {
-                const val = snapshot.val();
-                const lockAll = !!val.lockAll;
-                const lockedStudents = val.lockedStudents || {};
-                const isSingleLocked = !!lockedStudents[studentKey] || (currentUser.id && !!lockedStudents[currentUser.id]) || (currentUser.name && !!lockedStudents[currentUser.name.trim()]);
-                setIsTelegramLocked(lockAll || isSingleLocked);
-            } else {
-                setIsTelegramLocked(false);
-            }
-        };
-        telegramLocksRef.on('value', telegramLocksCallback);
 
         db.ref(`student_saved_forms/${principalId}/${studentKey}`).get().then(snap => {
             if (snap.exists() && snap.val().studentPhoto) {
@@ -329,34 +314,6 @@ export default function StudentApp({ currentUser, onLogout }: StudentAppProps) {
         setStudentData(prev => prev ? { ...prev, photoUrl: photoURL } : null);
     };
 
-    const handleUpdateTelegramChatId = async (newChatId: string) => {
-        const cleanId = newChatId.trim();
-        const principalId = currentUser.principalId || 'principal_al_hamza';
-        const studentKey = currentUser.id || currentUser.code || 'default_student';
-
-        // 1. Save to student_saved_forms in Firebase
-        await db.ref(`student_saved_forms/${principalId}/${studentKey}`).update({
-            telegramChatId: cleanId,
-            updatedAt: new Date().toISOString()
-        }).catch(() => {});
-
-        // 2. Save to classes array so teachers & class advisor see it live
-        if (currentUser.classId) {
-            const studentClass = allClasses.find(c => c.id === currentUser.classId);
-            if (studentClass?.students) {
-                const studentIndex = studentClass.students.findIndex(s => s.id === currentUser.id);
-                if (studentIndex !== -1) {
-                    const path = `classes/${currentUser.classId}/students/${studentIndex}/telegramChatId`;
-                    await db.ref(path).set(cleanId).catch(() => {});
-                }
-            }
-        }
-
-        // 3. Update local state
-        setStudentData(prev => prev ? { ...prev, telegramChatId: cleanId } : { id: currentUser.id, name: currentUser.name || '', telegramChatId: cleanId } as any);
-    };
-
-
     const unreadAdminNotifications = useMemo(() => notifications.filter(n => !n.isRead).length, [notifications]);
     const unreadChallengesCount = useMemo(() => challenges.filter(c => c.status === 'pending').length, [challenges]);
     const totalUnread = unreadAdminNotifications + unreadMessagesCount + unreadChallengesCount;
@@ -409,8 +366,6 @@ export default function StudentApp({ currentUser, onLogout }: StudentAppProps) {
                             activeHomeworks={activeHomeworks}
                             submissions={homeworkSubmissions}
                             isFormLocked={isFormLocked}
-                            isTelegramLocked={isTelegramLocked}
-                            onUpdateTelegramChatId={handleUpdateTelegramChatId}
                         />
                     </div>
                 );
@@ -488,7 +443,6 @@ export default function StudentApp({ currentUser, onLogout }: StudentAppProps) {
                             activeHomeworks={activeHomeworks}
                             submissions={homeworkSubmissions}
                             isFormLocked={isFormLocked}
-                            onUpdateTelegramChatId={handleUpdateTelegramChatId}
                         />
                     </div>
                 );

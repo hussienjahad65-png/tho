@@ -115,17 +115,14 @@ export default function RegistrationFormPage1({ formData, onUpdate, isPdfMode = 
                     <FormField label="مهنة ولي الامر" name="guardianProfession" value={formData.guardianProfession || ''} onUpdate={onUpdate} isPdfMode={isPdfMode} />
                 </div>
                 
-                {/* Contact and Telegram Phone Numbers (Grouped together with prominent required badge) */}
+                {/* Contact Phone Numbers */}
                 <div className="col-span-12 grid grid-cols-3 gap-x-4 gap-y-8">
                     <FormField 
-                        label="موبايل الطالب المرتبط بالتليكرام او المعرف" 
-                        name="studentPhoneOrTelegram" 
-                        value={formData.studentPhoneOrTelegram || ''} 
+                        label="رقم هاتف الطالب" 
+                        name="studentPhone" 
+                        value={formData.studentPhone || ''} 
                         onUpdate={onUpdate} 
                         isPdfMode={isPdfMode} 
-                        isRequired={true}
-                        badgeColor="#7dd3fc"
-                        labelSize="text-sm"
                     />
                     <FormField label="رقم هاتف الاب" name="fatherPhone" value={formData.fatherPhone || ''} onUpdate={onUpdate} isPdfMode={isPdfMode} />
                     <FormField label="رقم هاتف الام" name="motherPhone" value={formData.motherPhone || ''} onUpdate={onUpdate} isPdfMode={isPdfMode} />

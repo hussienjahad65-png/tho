@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import type { Student, StudentEvaluation, EvaluationRating, Homework, HomeworkSubmission } from '../../types.ts';
-import { Star, BarChart, X, Camera, Loader2, Smile, Clock, AlertTriangle, Lock, Send, CheckCircle2, HelpCircle, ExternalLink, Save, Sparkles, ShieldCheck } from 'lucide-react';
+import { Star, BarChart, X, Camera, Loader2, Smile, Clock, AlertTriangle, Lock } from 'lucide-react';
 
 const RATING_MAP: Record<EvaluationRating, { value: number; color: string; }> = {
     'ممتاز': { value: 6, color: 'text-green-500' },
@@ -29,24 +29,12 @@ interface StudentDashboardProps {
     activeHomeworks?: Homework[];
     submissions?: Record<string, HomeworkSubmission>;
     isFormLocked?: boolean;
-    isTelegramLocked?: boolean;
-    onUpdateTelegramChatId?: (chatId: string) => Promise<void>;
 }
 
-export default function StudentDashboard({ evaluations, studentData, studentFormPhoto, onPhotoUpdate, onOpenMoodModal, activeHomeworks = [], submissions = {}, isFormLocked = false, isTelegramLocked = false, onUpdateTelegramChatId }: StudentDashboardProps) {
+export default function StudentDashboard({ evaluations, studentData, studentFormPhoto, onPhotoUpdate, onOpenMoodModal, activeHomeworks = [], submissions = {}, isFormLocked = false }: StudentDashboardProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
-    const [telegramInput, setTelegramInput] = useState(studentData?.telegramChatId || '');
-    const [isSavingTelegram, setIsSavingTelegram] = useState(false);
-    const [showTelegramHelp, setShowTelegramHelp] = useState(false);
-    const [telegramSuccessMsg, setTelegramSuccessMsg] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        if (studentData?.telegramChatId) {
-            setTelegramInput(studentData.telegramChatId);
-        }
-    }, [studentData?.telegramChatId]);
 
     const displayPhoto = studentFormPhoto || 
         (studentData?.photoUrl && typeof studentData.photoUrl === 'string' && !studentData.photoUrl.includes("GckSf3v") ? studentData.photoUrl : null);
@@ -178,134 +166,6 @@ export default function StudentDashboard({ evaluations, studentData, studentForm
 
                 {/* Deadlines and Summary Section */}
                 <div className="lg:col-span-2 space-y-6">
-                    {/* Direct Telegram Linking Card */}
-                    <div className="bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 text-white p-6 rounded-2xl shadow-lg space-y-4 border border-sky-400/30">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                                <div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl text-white shadow-inner">
-                                    <Send className="w-7 h-7" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-xl text-white flex items-center gap-2">
-                                        <span>ربط التليكرام المباشر</span>
-                                        <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
-                                    </h3>
-                                    <p className="text-xs text-sky-100 mt-0.5">لاستلام الملاحظات والواجبات وتوجيهات مرشد الصف الفردية مباشرةً على حسابك</p>
-                                </div>
-                            </div>
-                            {studentData?.telegramChatId ? (
-                                <div className="flex items-center gap-2">
-                                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-green-500 text-white text-xs font-black rounded-full shadow-md">
-                                        <CheckCircle2 size={16} />
-                                        <span>مرتبط: {studentData.telegramChatId}</span>
-                                    </span>
-                                </div>
-                            ) : (
-                                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-400 text-amber-950 text-xs font-black rounded-full shadow-md animate-bounce">
-                                    <ShieldCheck size={16} />
-                                    <span>غير مرتبط بعد</span>
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Direct Action Button & Interactive Form */}
-                        <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20 space-y-3.5">
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-                                <a
-                                    href="https://t.me/userinfobot"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 bg-white text-sky-800 font-black text-sm rounded-xl hover:bg-sky-50 transition-all shadow-md hover:shadow-lg active:scale-98 group"
-                                >
-                                    <Send className="w-4 h-4 text-sky-600 group-hover:translate-x-1 transition-transform" />
-                                    <span>زر "ربط التليكرام المباشر" (استخراج الآيدي بنقرة واحدة)</span>
-                                    <ExternalLink className="w-4 h-4 text-sky-500 opacity-70" />
-                                </a>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowTelegramHelp(!showTelegramHelp)}
-                                    className="px-4 py-3 bg-sky-900/50 hover:bg-sky-900 text-white text-xs font-bold rounded-xl transition border border-white/20 flex items-center justify-center gap-1.5"
-                                >
-                                    <HelpCircle size={16} />
-                                    <span>طريقة الاستخراج؟</span>
-                                </button>
-                            </div>
-
-                            {showTelegramHelp && (
-                                <div className="p-3.5 bg-sky-950/60 rounded-xl text-xs text-sky-100 space-y-2 border border-sky-300/30">
-                                    <p className="font-bold text-amber-300 text-sm flex items-center gap-1">
-                                        <span>💡 خطوات ربط حسابك في التليكرام بثوانٍ:</span>
-                                    </p>
-                                    <ol className="list-decimal list-inside space-y-1 text-sky-100 font-medium leading-relaxed">
-                                        <li>انقر على زر <b>"ربط التليكرام المباشر"</b> الأبيض أعلاه.</li>
-                                        <li>سيُفتح لك بوت استخراج الآيدي (<code className="bg-white/20 px-1 py-0.5 rounded font-mono text-white">@userinfobot</code>) في التليكرام، اضغط على <b>Start / بدء</b>.</li>
-                                        <li>سينسخ البوت لك رقم الآيدي العددي الخاص بك (مثل: <code className="bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded font-mono font-bold">589123456</code>).</li>
-                                        <li>انسخ هذا الرقم، ثم ضعْه في المستطيل أدناه واضغط على <b>حفظ وتأكيد الآيدي</b>.</li>
-                                    </ol>
-                                </div>
-                            )}
-
-                            {/* Input and Save Form */}
-                            <div className="space-y-1.5 pt-1">
-                                <label className="block text-xs font-bold text-sky-100 flex items-center justify-between">
-                                    <span>أدخل رقم الـ Chat ID الخاص بحسابك (مثال: 589123456):</span>
-                                    {isTelegramLocked && (
-                                        <span className="text-amber-300 font-black flex items-center gap-1 text-[11px]">
-                                            <Lock size={12} /> التعديل مقفل من قبل المعاون
-                                        </span>
-                                    )}
-                                </label>
-                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                    <input
-                                        type="text"
-                                        value={telegramInput}
-                                        onChange={(e) => setTelegramInput(e.target.value)}
-                                        disabled={isTelegramLocked}
-                                        placeholder={isTelegramLocked ? "التعديل مقفل حالياً" : "ضع الآيدي هنا مثلاً: 589123456"}
-                                        className="flex-1 px-3.5 py-2.5 bg-white text-gray-900 rounded-xl text-sm font-mono dir-ltr focus:outline-none focus:ring-2 focus:ring-amber-300 shadow-inner placeholder:text-gray-400 disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed"
-                                    />
-                                    <button
-                                        type="button"
-                                        disabled={isTelegramLocked || isSavingTelegram || !telegramInput.trim()}
-                                        onClick={async () => {
-                                            if (!onUpdateTelegramChatId || isTelegramLocked) return;
-                                            setIsSavingTelegram(true);
-                                            try {
-                                                await onUpdateTelegramChatId(telegramInput.trim());
-                                                setTelegramSuccessMsg(true);
-                                                setTimeout(() => setTelegramSuccessMsg(false), 5000);
-                                            } catch (err) {
-                                                alert("حدث خطأ أثناء حفظ معرف التليكرام.");
-                                            } finally {
-                                                setIsSavingTelegram(false);
-                                            }
-                                        }}
-                                        className="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-xs rounded-xl transition disabled:opacity-50 disabled:bg-amber-400/50 flex items-center justify-center gap-1.5 shadow-md active:scale-98 disabled:cursor-not-allowed"
-                                    >
-                                        {isSavingTelegram ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            <Save className="w-4 h-4" />
-                                        )}
-                                        <span>حفظ وتأكيد الآيدي</span>
-                                    </button>
-                                </div>
-                                {isTelegramLocked && (
-                                    <div className="p-2.5 bg-red-900/60 border border-red-300/40 rounded-xl text-xs text-red-100 font-bold flex items-center gap-2 mt-2">
-                                        <Lock className="w-4 h-4 text-amber-300 flex-shrink-0" />
-                                        <span>تنبيه: تم قفل إمكانية إدخال أو تعديل معرف التليكرام من قبل معاون شؤون الطلبة.</span>
-                                    </div>
-                                )}
-                                {telegramSuccessMsg && (
-                                    <div className="p-2.5 bg-green-500/25 border border-green-300/50 rounded-xl text-xs text-green-100 font-bold text-center flex items-center justify-center gap-2 animate-fade-in mt-2">
-                                        <CheckCircle2 size={18} className="text-green-300" />
-                                        <span>تم حفظ معرف التليكرام وربط الحساب بنجاح! ستصلك رسائل الإدارة والمرشد فوراً.</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
                     {/* Deadlines Card */}
                     <div className="bg-white p-6 rounded-xl shadow-lg h-full border-r-4 border-orange-500">
                         <div className="flex items-center gap-3 mb-6">

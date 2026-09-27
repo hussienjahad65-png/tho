@@ -49,7 +49,6 @@ import ExamAbsenceRecorder from './components/principal/ExamAbsenceRecorder.tsx'
 import CounselorGradesView from './components/counselor/CounselorGradesView.tsx';
 import GeneralRegistrationGuide from './components/principal/GeneralRegistrationGuide.tsx';
 import ClassAdvisorDashboard from './components/teacher/ClassAdvisorDashboard.tsx';
-import StudentTelegramManager from './components/principal/StudentTelegramManager.tsx';
 import TextbookDistributionManager from './components/principal/TextbookDistributionManager.tsx';
 import WeeklyScheduleManager from './components/scheduling/WeeklyScheduleManager.tsx';
 import TeacherScheduleView from './components/teacher/TeacherScheduleView.tsx';
@@ -58,7 +57,7 @@ import TeacherQRAttendance from './components/principal/TeacherQRAttendance.tsx'
 import PrimaryLogExporter from './components/principal/PrimaryLogExporter.tsx';
 import ExamCardsExporter from './components/principal/ExamCardsExporter.tsx';
 
-type View = 'home' | 'settings' | 'class_manager' | 'grade_sheet' | 'export_results' | 'statistics' | 'teacher_log_exporter' | 'admin_log_exporter' | 'principal_dashboard' | 'receive_teacher_logs' | 'electronic_logbook' | 'grade_board' | 'oral_exam_lists' | 'promotion_log' | 'exam_halls' | 'seating_chart_v2' | 'cover_editor' | 'exam_cards' | 'exam_control_log' | 'administrative_correspondence' | 'primary_school_log' | 'school_archive' | 'absence_manager' | 'parent_invitations' | 'exam_results_exporter' | 'teacher_platform' | 'leave_requests' | 'leave_request_form' | 'educational_encyclopedia' | 'student_management' | 'student_evaluation' | 'homework_manager' | 'hall_of_fame' | 'honor_board_view' | 'behavior_manager' | 'teacher_communication' | 'staff_achievements' | 'daily_grade_sheet' | 'school_forum' | 'ai_admin_assistant' | 'qr_grade_recorder' | 'qr_generator' | 'staff_kpis' | 'exam_absence_recorder' | 'student_grades' | 'general_registration' | 'class_advisor_dashboard' | 'student_telegram_manager' | 'textbook_distribution' | 'weekly_schedule' | 'teacher_schedule' | 'teacher_discipline' | 'teacher_qr_attendance';
+type View = 'home' | 'settings' | 'class_manager' | 'grade_sheet' | 'export_results' | 'statistics' | 'teacher_log_exporter' | 'admin_log_exporter' | 'principal_dashboard' | 'receive_teacher_logs' | 'electronic_logbook' | 'grade_board' | 'oral_exam_lists' | 'promotion_log' | 'exam_halls' | 'seating_chart_v2' | 'cover_editor' | 'exam_cards' | 'exam_control_log' | 'administrative_correspondence' | 'primary_school_log' | 'school_archive' | 'absence_manager' | 'parent_invitations' | 'exam_results_exporter' | 'teacher_platform' | 'leave_requests' | 'leave_request_form' | 'educational_encyclopedia' | 'student_management' | 'student_evaluation' | 'homework_manager' | 'hall_of_fame' | 'honor_board_view' | 'behavior_manager' | 'teacher_communication' | 'staff_achievements' | 'daily_grade_sheet' | 'school_forum' | 'ai_admin_assistant' | 'qr_grade_recorder' | 'qr_generator' | 'staff_kpis' | 'exam_absence_recorder' | 'student_grades' | 'general_registration' | 'class_advisor_dashboard' | 'textbook_distribution' | 'weekly_schedule' | 'teacher_schedule' | 'teacher_discipline' | 'teacher_qr_attendance';
 
 interface NavItem {
     view: View;
@@ -568,8 +567,6 @@ export default function MainApp({ currentUser, onLogout, users, addUser, updateU
                     return <TextbookDistributionManager principal={principalId ? { id: principalId } as any : effectiveCurrentUser} settings={effectiveSettings} classes={assistantClasses} />;
                 case 'student_grades':
                     return <CounselorGradesView classes={assistantClasses} settings={effectiveSettings} />;
-                case 'student_telegram_manager':
-                    return <StudentTelegramManager classes={assistantClasses.length > 0 ? assistantClasses : (principalId ? classes.filter(c => c.principalId === principalId) : classes)} currentUser={effectiveCurrentUser} settings={effectiveSettings} />;
                 case 'weekly_schedule':
                     return <WeeklyScheduleManager principal={principalId ? { id: principalId, name: effectiveSettings.principalName } as any : effectiveCurrentUser} users={users} classes={assistantClasses.length > 0 ? assistantClasses : classes} settings={effectiveSettings} />;
                 case 'teacher_qr_attendance':
@@ -680,7 +677,6 @@ export default function MainApp({ currentUser, onLogout, users, addUser, updateU
                 case 'cover_editor': return <CoverEditor />;
                 case 'exam_control_log': return <ExamControlLog principal={effectiveCurrentUser} users={users} settings={effectiveSettings} classes={principalClasses} />;
                 case 'school_archive': return <SchoolArchive />;
-                case 'student_telegram_manager': return <StudentTelegramManager classes={principalClasses} currentUser={effectiveCurrentUser} settings={effectiveSettings} />;
                 case 'weekly_schedule': return <WeeklyScheduleManager principal={effectiveCurrentUser} users={users} classes={principalClasses} settings={effectiveSettings} />;
                 case 'school_forum': return <SchoolForum currentUser={effectiveCurrentUser} />;
                 default: return <ClassManager classes={principalClasses} onSelectClass={handleSelectClass} currentUser={effectiveCurrentUser} settings={effectiveSettings} />;
@@ -697,7 +693,6 @@ export default function MainApp({ currentUser, onLogout, users, addUser, updateU
         { view: 'teacher_qr_attendance', icon: UserCheck, label: 'حضور المدرسين (QR)' },
         { view: 'principal_dashboard', icon: User, label: 'إدارة المدرسين' },
         { view: 'staff_achievements', icon: BarChart, label: 'إنجازات الكادر' },
-        { view: 'student_telegram_manager', icon: Send, label: 'تليكرام الطلبة' },
         { view: 'school_forum', icon: MessageCircle, label: 'منتدى المدرسة' },
         { view: 'student_management', icon: Users, label: 'إدارة الطلاب والاشتراكات' },
         { view: 'textbook_distribution', icon: BookOpenCheck, label: 'تسليم واستلام الكتب' },
@@ -717,7 +712,6 @@ export default function MainApp({ currentUser, onLogout, users, addUser, updateU
         { view: 'teacher_qr_attendance', icon: UserCheck, label: 'حضور المدرسين (QR)' },
         { view: 'weekly_schedule', icon: CalendarClock, label: 'الجدول المدرسي الأسبوعي' },
         { view: 'textbook_distribution', icon: BookOpenCheck, label: 'تسليم واستلام الكتب' },
-        { view: 'student_telegram_manager', icon: Send, label: 'إدارة تليكرام الطلبة' },
         { view: 'student_grades', icon: GraduationCap, label: 'نتائج الطلاب' },
         { view: 'absence_manager', icon: CalendarClock, label: 'إدارة الغيابات' },
         { view: 'behavior_manager', icon: ShieldBan, label: 'إدارة درجات السلوك' },
@@ -882,11 +876,6 @@ export default function MainApp({ currentUser, onLogout, users, addUser, updateU
                         <a href="https://www.facebook.com/profile.php?id=61578356680977" target="_blank" rel="noopener noreferrer" title="تابعنا على فيسبوك" className="p-2 rounded-full hover:bg-gray-200 transition-colors">
                             <img src="https://i.imgur.com/zC26Bw6.png" alt="Facebook logo" className="w-8 h-8" />
                         </a>
-                        {(isPrincipal || isAssistant) && (
-                            <a href="https://t.me/trbwetk" target="_blank" rel="noopener noreferrer" title="انضم الى كروب المناقشات" className="p-2 rounded-full hover:bg-gray-200 transition-colors">
-                                <img src="https://i.imgur.com/YsOAIfV.png" alt="Telegram logo" className="w-8 h-8" />
-                            </a>
-                        )}
                     </div>
                 </header>
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-200 p-4 sm:p-6 lg:p-8">

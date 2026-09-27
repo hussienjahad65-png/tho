@@ -59,9 +59,6 @@ export interface SchoolSettings {
     lockS2Submissions?: boolean;
     lockAllSubmissions?: boolean;
     monthlyResultsNotice?: boolean;
-    telegramBotToken?: string;
-    telegramDefaultChatId?: string;
-    telegramEnabled?: boolean;
 }
 
 export interface SubjectGrade {
@@ -113,7 +110,6 @@ export interface Student {
     photoUrl?: string;
     studentAccessCode?: string;
     notes?: string;
-    telegramChatId?: string;
 }
 
 export interface TeacherSubjectGrade {

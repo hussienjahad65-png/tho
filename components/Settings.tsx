@@ -2,9 +2,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { SchoolSettings, User } from '../types.ts';
 import { SCHOOL_TYPES, SCHOOL_GENDERS, SCHOOL_LEVELS, GOVERNORATES } from '../constants.ts';
-import { Users, Database, ExternalLink, RefreshCw, Loader2, Download, Upload, AlertTriangle, History, ShieldCheck, Send, MessageSquare, CheckCircle2 } from 'lucide-react';
+import { Users, Database, RefreshCw, Loader2, Download, Upload, AlertTriangle, History, ShieldCheck } from 'lucide-react';
 import { db } from '../lib/firebase.ts';
-import { sendTelegramNotification } from '../lib/telegram.ts';
 
 interface SettingsProps {
     currentSettings: SchoolSettings;
@@ -20,50 +19,12 @@ export default function Settings({ currentSettings, onSave, currentUser, updateU
     const [isCalculatingSize, setIsCalculatingSize] = useState(false);
     const [isBackupLoading, setIsBackupLoading] = useState(false);
     const [isRestoreLoading, setIsRestoreLoading] = useState(false);
-    const [isTestingTelegram, setIsTestingTelegram] = useState(false);
-    const [telegramTestStatus, setTelegramTestStatus] = useState<{ success?: boolean; message?: string } | null>(null);
 
     const isPrincipal = currentUser.role === 'principal' || currentUser.role === 'admin';
-    const isAssistant = currentUser.role === 'assistant';
-    const canTestTelegram = isPrincipal || isAssistant;
     const isFormDisabled = currentUser.role === 'teacher';
     const areNameFieldsDisabled = currentUser.role === 'teacher';
 
     const principalId = isPrincipal ? currentUser.id : currentUser.principalId;
-
-    const handleTestTelegram = async () => {
-        if (!canTestTelegram) return;
-        if (!settings.telegramBotToken?.trim()) {
-            alert('يرجى إدخال رمز البوت (Bot Token) أولاً.');
-            return;
-        }
-        if (!settings.telegramDefaultChatId?.trim()) {
-            alert('يرجى إدخال معرف الشات/القناة الافتراضي (Default Chat ID) أولاً.');
-            return;
-        }
-
-        setIsTestingTelegram(true);
-        setTelegramTestStatus(null);
-
-        const config = {
-            botToken: settings.telegramBotToken,
-            defaultChatId: settings.telegramDefaultChatId,
-            enabled: true,
-        };
-
-        const result = await sendTelegramNotification(
-            config,
-            settings.telegramDefaultChatId,
-            `<b>🔔 رسالة تجريبية من تطبيق ${settings.schoolName || 'المدرسة'}</b>\n\nتم ربط البوت بالنظام بنجاح! جاهز لإرسال الإشعارات والرسائل للطلاب والمجموعات.`
-        );
-
-        if (result.success) {
-            setTelegramTestStatus({ success: true, message: 'تم إرسال الرسالة التجريبية بنجاح إلى التليكرام! تحقق من المجموعة أو القناة.' });
-        } else {
-            setTelegramTestStatus({ success: false, message: result.error || 'فشل إرسال الرسالة التجريبية.' });
-        }
-        setIsTestingTelegram(false);
-    };
 
     // Effect for online users count
     useEffect(() => {
@@ -378,96 +339,6 @@ export default function Settings({ currentSettings, onSave, currentUser, updateU
                     <InputField label="درجة القرار" name="decisionPoints" type="number" value={settings.decisionPoints} onChange={handleChange} disabled={isFormDisabled} />
                 </div>
 
-                {/* Telegram Bot Integration Section */}
-                <div className="mt-8 p-6 bg-gradient-to-br from-sky-50 to-blue-50 rounded-2xl border border-sky-200 shadow-sm space-y-4">
-                    <div className="flex items-center justify-between flex-wrap gap-3 border-b border-sky-200 pb-3">
-                        <div className="flex items-center gap-2">
-                            <div className="p-2 bg-sky-500 text-white rounded-xl shadow-sm">
-                                <Send className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-sky-900">إعدادات الإشعارات عبر التليكرام (Telegram Bot)</h3>
-                                <p className="text-xs text-sky-700">تتيح لك تحويل وتوجيه إشعارات التطبيق (الرسائل، التوجيهات، الملاحظات) تلقائياً إلى مجموعة أو قناة تليكرام أو إلى شات الطالب المباشر.</p>
-                            </div>
-                        </div>
-
-                        <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-sky-300 shadow-sm">
-                            <input
-                                type="checkbox"
-                                name="telegramEnabled"
-                                checked={!!settings.telegramEnabled}
-                                onChange={(e) => setSettings(prev => ({ ...prev, telegramEnabled: e.target.checked }))}
-                                disabled={isFormDisabled}
-                                className="w-4 h-4 text-sky-600 rounded border-gray-300 focus:ring-sky-500"
-                            />
-                            <span className="text-xs font-bold text-sky-900">تفعيل إشعارات التليكرام</span>
-                        </label>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">رمز البوت الخاص بك (Bot Token)</label>
-                            <input
-                                type="text"
-                                name="telegramBotToken"
-                                value={settings.telegramBotToken || ''}
-                                onChange={handleChange}
-                                disabled={isFormDisabled}
-                                placeholder="مثال: 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ..."
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono bg-white focus:ring-2 focus:ring-sky-500 dir-ltr"
-                            />
-                            <p className="text-[11px] text-gray-500 mt-1">احصل على الرمز مجاناً من بوت BotFather في التليكرام.</p>
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">معرف المجموعة / القناة الافتراضي (Default Chat ID)</label>
-                            <input
-                                type="text"
-                                name="telegramDefaultChatId"
-                                value={settings.telegramDefaultChatId || ''}
-                                onChange={handleChange}
-                                disabled={isFormDisabled}
-                                placeholder="مثال للمجموعات: -1001234567890 أو @channel_username"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono bg-white focus:ring-2 focus:ring-sky-500 dir-ltr"
-                            />
-                            <p className="text-[11px] text-gray-500 mt-1">تأكد من إضافتك للبوت كـ "مشرف" (Admin) داخل المجموعة أو القناة.</p>
-                        </div>
-                    </div>
-
-                    <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-sky-100">
-                        <div className="flex flex-wrap items-center gap-2.5">
-                            <button
-                                type="button"
-                                onClick={handleTestTelegram}
-                                disabled={isTestingTelegram || !settings.telegramEnabled || !canTestTelegram}
-                                title={!canTestTelegram ? 'هذا الزر متاح فقط لمدير المدرسة ومعاون شؤون الطلبة' : (!settings.telegramEnabled ? 'يرجى تفعيل إشعارات التليكرام أولاً' : 'اختبار إرسال رسالة تجريبية الآن')}
-                                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition ${
-                                    canTestTelegram
-                                        ? 'bg-sky-600 hover:bg-sky-700 text-white shadow disabled:bg-gray-300 disabled:text-gray-600 disabled:cursor-not-allowed disabled:shadow-none'
-                                        : 'bg-gray-200 text-gray-400 opacity-50 cursor-not-allowed border border-gray-300 shadow-none pointer-events-none'
-                                }`}
-                            >
-                                {isTestingTelegram ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                                <span>اختبار إرسال رسالة تجريبية الآن</span>
-                            </button>
-
-                            {!canTestTelegram && (
-                                <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">
-                                    (خاص بمدير المدرسة ومعاون شؤون الطلبة فقط)
-                                </span>
-                            )}
-                        </div>
-
-                        {telegramTestStatus && canTestTelegram && (
-                            <div className={`p-2.5 rounded-lg text-xs font-bold flex items-center gap-2 ${
-                                telegramTestStatus.success ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-red-100 text-red-800 border border-red-300'
-                            }`}>
-                                {telegramTestStatus.success ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertTriangle className="w-4 h-4 text-red-600" />}
-                                <span>{telegramTestStatus.message}</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
                 <div className="flex justify-end pt-6">
                     <button 
                         type="submit" 

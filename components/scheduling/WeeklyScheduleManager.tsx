@@ -76,7 +76,6 @@ import {
     isTeacherUnavailableAt,
     getTeacherUnavailablePeriodsOnDay
 } from './schedulerAlgorithm.ts';
-import { sendTelegramNotification, TelegramConfig } from '../../lib/telegram.ts';
 import {
     exportClassScheduleWord,
     exportTeacherScheduleWord,
@@ -173,8 +172,6 @@ export default function WeeklyScheduleManager({
     const [showPublishModal, setShowPublishModal] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
     const [publishTarget, setPublishTarget] = useState<'all' | 'teachers' | 'students'>('all');
-    const [sendTelegramToStudents, setSendTelegramToStudents] = useState(true);
-    const [telegramBotTokenInput, setTelegramBotTokenInput] = useState(settings.telegramBotToken || '');
     const [customPublishEffectiveDate, setCustomPublishEffectiveDate] = useState('اعتباراً من الأحد القادم');
     const [publishedInfo, setPublishedInfo] = useState<{
         publishTarget?: 'all' | 'teachers' | 'students';
@@ -191,8 +188,6 @@ export default function WeeklyScheduleManager({
     const [publishResult, setPublishResult] = useState<{
         success: boolean;
         message: string;
-        telegramSent: number;
-        telegramFailed: number;
         errors: string[];
     } | null>(null);
 
@@ -1000,7 +995,7 @@ export default function WeeklyScheduleManager({
     };
 
     // ----------------------------------------------------
-    // Publish Schedule to Teachers & Students + Telegram Broadcast
+    // Publish Schedule to Teachers & Students
     // ----------------------------------------------------
     const handlePublishSchedule = async () => {
         const principalId = principal.id;
@@ -1051,148 +1046,23 @@ export default function WeeklyScheduleManager({
                 effectiveDate: customPublishEffectiveDate
             });
 
-            // 2. Process Telegram notifications if requested AND students are included
-            let telegramSent = 0;
-            let telegramFailed = 0;
-            const errors: string[] = [];
-
-            if (sendTelegramToStudents && publishedToStudents) {
-                interface StudentNotificationItem {
-                    id: string;
-                    name: string;
-                    telegramChatId: string;
-                    classId: string;
-                    stage: string;
-                    section: string;
-                }
-
-                const studentsToNotify: StudentNotificationItem[] = [];
-                classes.forEach(c => {
-                    (c.students || []).forEach(s => {
-                        if (s && s.id && s.telegramChatId && s.telegramChatId.trim()) {
-                            studentsToNotify.push({
-                                id: s.id,
-                                name: s.name,
-                                telegramChatId: s.telegramChatId.trim(),
-                                classId: c.id,
-                                stage: c.stage,
-                                section: c.section
-                            });
-                        }
-                    });
-                });
-
-                const botToken = telegramBotTokenInput.trim() || settings.telegramBotToken?.trim();
-
-                if (!botToken) {
-                    errors.push('لم يتم إرسال التليكرام: يرجى إدخال رمز البوت (Bot Token).');
-                } else if (studentsToNotify.length === 0) {
-                    // No students with registered Telegram IDs
-                } else {
-                    setPublishProgress({
-                        total: studentsToNotify.length,
-                        current: 0,
-                        successCount: 0,
-                        failCount: 0,
-                        statusMessage: `جاري إرسال إشعارات التليكرام لـ (${studentsToNotify.length}) طالب...`
-                    });
-
-                    const telegramConfig: TelegramConfig = {
-                        botToken: botToken,
-                        enabled: true
-                    };
-
-                    for (let i = 0; i < studentsToNotify.length; i++) {
-                        const st = studentsToNotify[i];
-                        
-                        // Build schedule summary for student's class
-                        const daysLines: string[] = [];
-                        const activeDaysList = (Array.isArray(config.activeDays) && config.activeDays.length > 0) 
-                            ? config.activeDays 
-                            : DEFAULT_ACTIVE_DAYS;
-                        
-                        activeDaysList.forEach(day => {
-                            const pCount = getPeriodsForDay(day, config);
-                            const dayPeriods = schedule[day] || [];
-                            const subjNames: string[] = [];
-                            
-                            for (let p = 1; p <= pCount; p++) {
-                                const pData = dayPeriods.find(dp => dp.period === p);
-                                const assign = pData?.assignments?.[st.classId];
-                                if (assign && assign.subject) {
-                                    subjNames.push(`ح${p}: ${assign.subject}`);
-                                }
-                            }
-                            
-                            if (subjNames.length > 0) {
-                                daysLines.push(`▫️ <b>${DAYS_ARABIC[day] || day}:</b> ${subjNames.join(' | ')}`);
-                            }
-                        });
-
-                        const message = `🔔 <b>إشعار جدول الدروس الأسبوعي الجديد</b>\n` +
-                            `🏛️ <b>${settings.schoolName || 'المدرسة'}</b>\n` +
-                            `━━━━━━━━━━━━━━━━━━━\n` +
-                            `👤 <b>الطالب:</b> ${st.name}\n` +
-                            `🏫 <b>الصف والشعبة:</b> ${st.stage} (${st.section})\n` +
-                            `📅 <b>تاريخ الاعتماد:</b> ${customPublishEffectiveDate}\n\n` +
-                            `📖 <b>ملخص جدول الحصص الأسبوعي لشعبتك:</b>\n` +
-                            (daysLines.length > 0 ? daysLines.join('\n') : 'تم إتاحة الجدول كاملاً على المنصة.') +
-                            `\n\n💡 <i>ملاحظة: يمكنك الاطلاع على الجدول الدراسي وتصديره بصيغة PDF عبر الدخول إلى بوابتك في منصة المدرسة.</i>`;
-
-                        try {
-                            const res = await sendTelegramNotification(telegramConfig, st.telegramChatId, message);
-                            if (res.success) {
-                                telegramSent++;
-                            } else {
-                                telegramFailed++;
-                                if (errors.length < 5 && res.error) {
-                                    errors.push(`${st.name}: ${res.error}`);
-                                }
-                            }
-                        } catch (err: any) {
-                            telegramFailed++;
-                            if (errors.length < 5) {
-                                errors.push(`${st.name}: ${err?.message || 'فشل الاتصال'}`);
-                            }
-                        }
-
-                        setPublishProgress({
-                            total: studentsToNotify.length,
-                            current: i + 1,
-                            successCount: telegramSent,
-                            failCount: telegramFailed,
-                            statusMessage: `جاري الإرسال (${i + 1}/${studentsToNotify.length})...`
-                        });
-
-                        // Small delay to prevent hitting Telegram rate limit
-                        if (i < studentsToNotify.length - 1) {
-                            await new Promise(r => setTimeout(r, 60));
-                        }
-                    }
-                }
-            }
-
             let resultSuccessMsg = 'تم نشر وتعميم الجدول المدرسي بنجاح لكافة المدرسين والطلبة!';
             if (publishTarget === 'teachers') {
                 resultSuccessMsg = 'تم نشر الجدول بنجاح لبوابة المدرسين فقط (مخفي عن الطلبة لحين الاعتماد النهائي).';
             } else if (publishTarget === 'students') {
-                resultSuccessMsg = 'تم نشر الجدول بنجاح لبوابة الطلبة وتطبيق التليكرام فقط.';
+                resultSuccessMsg = 'تم نشر الجدول بنجاح لبوابة الطلبة فقط.';
             }
 
             setPublishResult({
                 success: true,
                 message: resultSuccessMsg,
-                telegramSent,
-                telegramFailed,
-                errors
+                errors: []
             });
         } catch (err: any) {
             console.error('Error publishing schedule:', err);
             setPublishResult({
                 success: false,
                 message: `حدث خطأ أثناء نشر الجدول: ${err?.message || 'يرجى المحاولة مجدداً'}`,
-                telegramSent: 0,
-                telegramFailed: 0,
                 errors: [err?.message || 'خطأ غير معروف']
             });
         } finally {
@@ -4063,15 +3933,12 @@ export default function WeeklyScheduleManager({
     };
 
     // ----------------------------------------------------
-    // Publish Modal: Broadcast to Teachers & Students + Telegram
+    // Publish Modal: Broadcast to Teachers & Students
     // ----------------------------------------------------
     const renderPublishModal = () => {
         if (!showPublishModal) return null;
 
         const totalStudentsCount = classes.reduce((sum, c) => sum + (c.students || []).length, 0);
-        const telegramStudentsCount = classes.reduce((sum, c) => {
-            return sum + (c.students || []).filter(s => s && s.telegramChatId && s.telegramChatId.trim()).length;
-        }, 0);
 
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto" dir="rtl">
@@ -4087,7 +3954,7 @@ export default function WeeklyScheduleManager({
                                     نشر وتعميم الجدول الدراسي الأسبوعي
                                 </h3>
                                 <p className="text-xs text-gray-500 mt-0.5">
-                                    إتاحة الجداول في بوابات المدرسين والطلبة وإرسال إشعارات فورية عبر التليكرام.
+                                    إتاحة الجداول في بوابات المدرسين والطلبة.
                                 </p>
                             </div>
                         </div>
@@ -4134,7 +4001,7 @@ export default function WeeklyScheduleManager({
                                 </div>
                                 <div>
                                     <p className="font-bold text-xs text-gray-900">للجميع (المدرسين والطلبة)</p>
-                                    <p className="text-[10px] text-gray-500 mt-0.5">تحديث بوابات المدرسين والطلبة والتليكرام معاً</p>
+                                    <p className="text-[10px] text-gray-500 mt-0.5">تحديث بوابات المدرسين والطلبة معاً</p>
                                 </div>
                             </button>
 
@@ -4186,14 +4053,14 @@ export default function WeeklyScheduleManager({
                                 </div>
                                 <div>
                                     <p className="font-bold text-xs text-gray-900">للطلاب فقط</p>
-                                    <p className="text-[10px] text-gray-500 mt-0.5">تحديث بوابة الطلبة وإرسال إشعارات التليكرام</p>
+                                    <p className="text-[10px] text-gray-500 mt-0.5">تحديث بوابة الطلبة</p>
                                 </div>
                             </button>
                         </div>
                     </div>
 
                     {/* Publication Stats Overview */}
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                         <div className={`p-3.5 rounded-2xl border text-center transition ${
                             publishTarget === 'teachers' || publishTarget === 'all'
                                 ? 'bg-cyan-50/70 border-cyan-200 ring-1 ring-cyan-400/30'
@@ -4216,17 +4083,6 @@ export default function WeeklyScheduleManager({
                                 {publishTarget === 'teachers' ? 'مخفي عن بوابة الطلبة' : `${totalStudentsCount} طالب مسجل`}
                             </p>
                         </div>
-                        <div className={`p-3.5 rounded-2xl border text-center transition ${
-                            publishTarget === 'students' || publishTarget === 'all'
-                                ? 'bg-blue-50/70 border-blue-200 ring-1 ring-blue-400/30'
-                                : 'bg-gray-50/70 border-gray-200 opacity-60'
-                        }`}>
-                            <p className="text-xs text-blue-800 font-bold">مشتركو التليكرام</p>
-                            <p className="text-2xl font-black text-blue-900 mt-1">{telegramStudentsCount}</p>
-                            <p className="text-[10px] text-blue-600">
-                                {publishTarget === 'teachers' ? 'معطل (للمدرسين فقط)' : 'يملكون Chat ID'}
-                            </p>
-                        </div>
                     </div>
 
                     {/* Publication Options */}
@@ -4243,54 +4099,6 @@ export default function WeeklyScheduleManager({
                                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 focus:bg-white focus:border-cyan-500 outline-hidden transition"
                             />
                         </div>
-
-                        {/* Telegram Broadcast Toggle (Only if students are included) */}
-                        {publishTarget !== 'teachers' && (
-                            <div className="p-4 bg-gradient-to-br from-blue-50/70 via-white to-sky-50/60 rounded-2xl border border-blue-200 space-y-3">
-                                <label className="flex items-center justify-between cursor-pointer">
-                                    <div className="flex items-center gap-2.5">
-                                        <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
-                                            <Bot size={20} />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-gray-900">
-                                                إرسال إشعار تليكرام فوري لكل طالب بجدول شعبته
-                                            </p>
-                                            <p className="text-xs text-gray-500 mt-0.5">
-                                                سيتم إرسال رسالة منسقة تحتوي الحصص اليومية واسم المادة لكل طالب مسجل بالـ Chat ID.
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <input
-                                        type="checkbox"
-                                        checked={sendTelegramToStudents}
-                                        onChange={(e) => setSendTelegramToStudents(e.target.checked)}
-                                        className="w-5 h-5 text-blue-600 rounded-lg"
-                                    />
-                                </label>
-
-                                {sendTelegramToStudents && (
-                                    <div className="pt-3 border-t border-blue-100/80 space-y-2">
-                                        <label className="block text-xs font-bold text-blue-950">
-                                            رمز البوت (Telegram Bot Token):
-                                        </label>
-                                        <input
-                                            type="password"
-                                            value={telegramBotTokenInput}
-                                            onChange={(e) => setTelegramBotTokenInput(e.target.value)}
-                                            placeholder="مثال: 123456789:ABCdefGhIJKlmNoPQRstUVwxyZ"
-                                            className="w-full px-3.5 py-2 bg-white border border-blue-200 rounded-xl text-xs font-mono text-gray-900 focus:border-blue-500 outline-hidden"
-                                        />
-                                        {telegramStudentsCount === 0 && (
-                                            <p className="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200 flex items-center gap-1.5">
-                                                <AlertTriangle size={14} className="text-amber-600 shrink-0" />
-                                                لا يوجد طلاب لديهم معرف تليكرام (Chat ID) مسجل حالياً. سيتم النشر على المنصة فقط.
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        )}
                     </div>
 
                     {/* Progress Indicator */}
@@ -4307,10 +4115,6 @@ export default function WeeklyScheduleManager({
                                         width: `${publishProgress.total > 0 ? (publishProgress.current / publishProgress.total) * 100 : 10}%`
                                     }}
                                 />
-                            </div>
-                            <div className="flex justify-between text-[11px] text-cyan-700">
-                                <span>ناجح: {publishProgress.successCount}</span>
-                                <span>فشل: {publishProgress.failCount}</span>
                             </div>
                         </div>
                     )}
@@ -4330,12 +4134,6 @@ export default function WeeklyScheduleManager({
                                 )}
                                 <p className="font-bold text-sm">{publishResult.message}</p>
                             </div>
-
-                            {sendTelegramToStudents && publishResult.telegramSent > 0 && (
-                                <p className="text-xs text-emerald-700 font-medium mr-7">
-                                    تم إرسال إشعارات التليكرام بنجاح إلى ({publishResult.telegramSent}) طالب.
-                                </p>
-                            )}
 
                             {publishResult.errors.length > 0 && (
                                 <div className="mt-2 text-xs bg-white/70 p-2.5 rounded-xl border border-rose-200 text-rose-800 space-y-1">
@@ -4412,7 +4210,7 @@ export default function WeeklyScheduleManager({
                             setPublishResult(null);
                         }}
                         className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 active:scale-95 text-white font-black rounded-xl shadow-lg transition-all text-sm"
-                        title="نشر الجدول إلى بوابات المدرسين وبوابات الطلاب وإرسال إشعارات تليكرام"
+                        title="نشر الجدول إلى بوابات المدرسين وبوابات الطلاب"
                     >
                         <Send size={18} />
                         <span>نشر الجدول</span>

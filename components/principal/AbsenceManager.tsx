@@ -2,10 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import * as ReactDOM from 'react-dom/client';
 import type { User, SchoolSettings, ClassData, Student, AbsenceStatus } from '../../types.ts';
 import { db } from '../../lib/firebase.ts';
-import { Calendar, ListChecks, Printer, AlertTriangle, Loader2, PlayCircle, X, Send, CheckCircle2, MessageSquare, Bot, Users, Bell, Info } from 'lucide-react';
+import { Calendar, ListChecks, Printer, AlertTriangle, Loader2, PlayCircle, X, CheckCircle2 } from 'lucide-react';
 import MonthlyAbsenceReportPDF from './MonthlyAbsenceReportPDF.tsx';
 import AbsenceWarningLetterPDF from './AbsenceWarningLetterPDF.tsx';
-import { sendTelegramNotification, TelegramConfig } from '../../lib/telegram.ts';
 
 declare const jspdf: any;
 declare const html2canvas: any;
@@ -32,26 +31,6 @@ export default function AbsenceManager({ principal, settings, classes }: Absence
     const [currentDate, setCurrentDate] = useState(() => new Date().toISOString().split('T')[0]);
     const [dailyAbsences, setDailyAbsences] = useState<Record<string, AbsenceStatus>>({});
     const [isLoadingDaily, setIsLoadingDaily] = useState(false);
-
-    // Telegram State
-    const [sendIndividualTelegram, setSendIndividualTelegram] = useState(true);
-    const [sendGroupTelegram, setSendGroupTelegram] = useState(true);
-    const [customGroupChatId, setCustomGroupChatId] = useState(settings?.telegramDefaultChatId || '');
-    const [isSendingTelegram, setIsSendingTelegram] = useState(false);
-    const [telegramLogModal, setTelegramLogModal] = useState<{ open: boolean; title: string; logs: string[] } | null>(null);
-
-    // Keep customGroupChatId synchronized if settings change
-    useEffect(() => {
-        if (settings?.telegramDefaultChatId) {
-            setCustomGroupChatId(prev => prev || settings.telegramDefaultChatId || '');
-        }
-    }, [settings?.telegramDefaultChatId]);
-
-    const telegramConfig: TelegramConfig = useMemo(() => ({
-        botToken: settings?.telegramBotToken,
-        defaultChatId: customGroupChatId || settings?.telegramDefaultChatId,
-        enabled: settings?.telegramEnabled
-    }), [settings, customGroupChatId]);
 
     // Monthly state
     const [currentMonth, setCurrentMonth] = useState(() => new Date().toISOString().slice(0, 7));
@@ -114,190 +93,33 @@ export default function AbsenceManager({ principal, settings, classes }: Absence
         setDailyAbsences(prev => ({ ...prev, [studentId]: STATUS_CYCLE[nextIndex] }));
     };
 
-    const handleSaveDaily = () => {
-        if (!selectedClassId || !currentDate) return;
-        const [year, month, day] = currentDate.split('-');
-        const path = `absences/${principal.id}/${selectedClassId}/${year}-${month}/${day}`;
-        db.ref(path).set(dailyAbsences).then(() => {
-            alert('تم حفظ الغيابات بنجاح.');
-        });
-    };
-
-    const handleExecuteAbsenceSaveAndTelegram = async (mode: 'save_only' | 'save_and_notify' | 'notify_individual_only' | 'notify_group_only') => {
+    const handleSaveDaily = async () => {
         if (!selectedClassId || !currentDate || !selectedClass) return;
-
-        const logs: string[] = [];
         const [year, month, day] = currentDate.split('-');
         const path = `absences/${principal.id}/${selectedClassId}/${year}-${month}/${day}`;
+        await db.ref(path).set(dailyAbsences);
 
-        // Save to DB if requested
-        if (mode === 'save_only' || mode === 'save_and_notify') {
-            await db.ref(path).set(dailyAbsences);
-            logs.push(`✅ تم حفظ سجل الغيابات في النظام بنجاح بتاريخ (${currentDate}).`);
-        }
-
-        if (mode === 'save_only') {
-            setTelegramLogModal({
-                open: true,
-                title: 'حفظ الغيابات',
-                logs
-            });
-            return;
-        }
-
-        // Get non-present students
         const nonPresentList = sortedStudents
             .map(s => ({ student: s, status: dailyAbsences[s.id] || 'present' }))
             .filter(item => item.status !== 'present');
 
-        if (nonPresentList.length === 0) {
-            logs.push('ℹ️ جميع الطلاب حاضرون في هذا التاريخ، لا يوجد غيابات لإرسال إشعارات عنها.');
-            setTelegramLogModal({
-                open: true,
-                title: 'تقرير إرسال التليكرام',
-                logs
-            });
-            return;
-        }
-
-        if (!settings?.telegramBotToken?.trim()) {
-            logs.push('❌ لم يتم إدخال توكن بوت التليكرام في إعدادات النظام. يرجى التوجه إلى صفحة (الإعدادات) وإدخال رمز البوت (Bot Token) لتفعيل الخدمة.');
-            setTelegramLogModal({
-                open: true,
-                title: 'تنبيه إعدادات التليكرام',
-                logs
-            });
-            return;
-        }
-
-        setIsSendingTelegram(true);
-
-        const shouldSendIndividual = (mode === 'save_and_notify' && sendIndividualTelegram) || mode === 'notify_individual_only';
-        const shouldSendGroup = (mode === 'save_and_notify' && sendGroupTelegram) || mode === 'notify_group_only';
-
-        // 1. Send Individual Telegram Messages
-        if (shouldSendIndividual) {
-            logs.push('--- 📱 بدء إرسال الإشعارات الفردية للطلاب غير الحاضرين ---');
-            let successCount = 0;
-            let missingIdCount = 0;
-            let failCount = 0;
-
-            for (const item of nonPresentList) {
-                const { student, status } = item;
-                const statusName = STATUS_INFO[status]?.text || 'غائب';
-                const chatId = student.telegramChatId?.trim();
-
-                // Store in-app notification in Firebase
-                try {
-                    await db.ref(`student_notifications/${principal.id}/${student.id}`).push({
-                        title: `تنبيه غياب يومي (${statusName})`,
-                        message: `تم تسجيل حالة (${statusName}) بتاريخ ${currentDate} للشعبة (${selectedClass.stage} - ${selectedClass.section}).`,
-                        timestamp: new Date().toISOString(),
-                        read: false,
-                        type: 'absence_alert'
-                    });
-                } catch (err) {
-                    console.error('Error pushing in-app notification:', err);
-                }
-
-                if (!chatId) {
-                    missingIdCount++;
-                    logs.push(`⚠️ الطالب/ة (${student.name}): لم يقم بربط آيدي التليكرام (Chat ID) بعد.`);
-                    continue;
-                }
-
-                const msg = 
-                    `<b>⚠️ تنبيه غياب طالب</b>\n\n` +
-                    `<b>اسم الطالب:</b> ${student.name}\n` +
-                    `<b>المرحلة والشعبة:</b> ${selectedClass.stage} - ${selectedClass.section}\n` +
-                    `<b>التاريخ:</b> ${currentDate}\n` +
-                    `<b>حالة الحضور:</b> ${statusName}\n\n` +
-                    `نسترعي انتباه ولي الأمر الموقر لمتابعة سبب غياب الطالب حرصاً على مستواه العلمي والتزامه بالدوام المدرسي.\n\n` +
-                    `<i>إدارة المدرسة - معاونية شؤون الطلبة</i>`;
-
-                const res = await sendTelegramNotification(telegramConfig, chatId, msg);
-                if (res.success) {
-                    successCount++;
-                    logs.push(`✅ الطالب/ة (${student.name}): تم إرسال إشعار التليكرام الفردي بنجاح (ID: ${chatId}).`);
-                } else {
-                    failCount++;
-                    logs.push(`❌ الطالب/ة (${student.name}): فشل الإرسال (${res.error})`);
-                }
-            }
-
-            logs.push(`📊 حصيلة الإرسال الفردي: تم إرسال ${successCount} | ${missingIdCount} غير مرتبطين | ${failCount} فشل.`);
-        }
-
-        // 2. Send Group List Telegram Message
-        if (shouldSendGroup) {
-            logs.push('--- 📢 بدء إرسال قائمة الغيابات الجماعية إلى مجموعة التليكرام ---');
-            const targetGroupId = customGroupChatId.trim() || settings?.telegramDefaultChatId?.trim();
-
-            if (!targetGroupId) {
-                logs.push('❌ لم يتم تحديد معرف مجموعة التليكرام (Group Chat ID). يرجى أدخال معرف المجموعة في الحقل المخصص.');
-            } else {
-                const groupMsg = 
-                    `<b>📋 قائمة غيابات الطلاب اليومية</b>\n` +
-                    `<b>المرحلة والشعبة:</b> ${selectedClass.stage} - ${selectedClass.section}\n` +
-                    `<b>التاريخ:</b> ${currentDate}\n` +
-                    `<b>العدد الكلي لغير الحاضرين:</b> ${nonPresentList.length} طالب/ة\n` +
-                    `-----------------------------------\n` +
-                    `<b>أسماء الطلاب الغائبين:</b>\n` +
-                    nonPresentList.map((item, idx) => `${idx + 1}. ${item.student.name} (${STATUS_INFO[item.status]?.text || 'غائب'})`).join('\n') +
-                    `\n-----------------------------------\n` +
-                    `<i>إدارة المدرسة - معاونية شؤون الطلبة</i>`;
-
-                const resGroup = await sendTelegramNotification(telegramConfig, targetGroupId, groupMsg);
-                if (resGroup.success) {
-                    logs.push(`✅ تم نشر قائمة الغيابات الجماعية لـ (${nonPresentList.length}) طالب بنجاح في المجموعة (${targetGroupId}).`);
-                } else {
-                    logs.push(`❌ فشل نشر القائمة الجماعية في المجموعة (${targetGroupId}): ${resGroup.error}`);
-                }
+        for (const item of nonPresentList) {
+            const { student, status } = item;
+            const statusName = STATUS_INFO[status]?.text || 'غائب';
+            try {
+                await db.ref(`student_notifications/${principal.id}/${student.id}`).push({
+                    title: `تنبيه غياب يومي (${statusName})`,
+                    message: `تم تسجيل حالة (${statusName}) بتاريخ ${currentDate} للشعبة (${selectedClass.stage} - ${selectedClass.section}).`,
+                    timestamp: new Date().toISOString(),
+                    read: false,
+                    type: 'absence_alert'
+                });
+            } catch (err) {
+                console.error('Error pushing in-app notification:', err);
             }
         }
 
-        setIsSendingTelegram(false);
-        setTelegramLogModal({
-            open: true,
-            title: 'تقرير إشعارات التليكرام والغيابات',
-            logs
-        });
-    };
-
-    const handleSendSingleStudentTelegram = async (student: Student) => {
-        if (!selectedClass || !currentDate) return;
-        const status = dailyAbsences[student.id] || 'present';
-        const statusName = STATUS_INFO[status]?.text || 'غائب';
-        const chatId = student.telegramChatId?.trim();
-
-        if (!chatId) {
-            alert(`الطالب/ة (${student.name}) لم يقم بربط آيدي التليكرام (Chat ID) بعد. يمكنك إضافة آيدي التليكرام له من صفحة (إدارة تليكرام الطلبة).`);
-            return;
-        }
-
-        if (!settings?.telegramBotToken?.trim()) {
-            alert('لم يتم ضبط توكن بوت التليكرام في إعدادات النظام.');
-            return;
-        }
-
-        setIsSendingTelegram(true);
-        const msg = 
-            `<b>⚠️ تنبيه غياب طالب</b>\n\n` +
-            `<b>اسم الطالب:</b> ${student.name}\n` +
-            `<b>المرحلة والشعبة:</b> ${selectedClass.stage} - ${selectedClass.section}\n` +
-            `<b>التاريخ:</b> ${currentDate}\n` +
-            `<b>حالة الحضور:</b> ${statusName}\n\n` +
-            `نسترعي انتباه ولي الأمر الموقر لمتابعة سبب غياب الطالب حرصاً على مستواه العلمي والتزامه بالدوام المدرسي.\n\n` +
-            `<i>إدارة المدرسة - معاونية شؤون الطلبة</i>`;
-
-        const res = await sendTelegramNotification(telegramConfig, chatId, msg);
-        setIsSendingTelegram(false);
-
-        if (res.success) {
-            alert(`تم إرسال إشعار التليكرام الفردي إلى الطالب (${student.name}) بنجاح!`);
-        } else {
-            alert(`فشل الإرسال إلى الطالب (${student.name}): ${res.error}`);
-        }
+        alert('تم حفظ الغيابات بنجاح.');
     };
     
     const monthlyTotals = useMemo(() => {
@@ -468,160 +290,35 @@ export default function AbsenceManager({ principal, settings, classes }: Absence
                         <div className="space-y-6 max-w-3xl mx-auto">
                             <div className="bg-white border rounded-xl shadow-sm divide-y overflow-hidden">
                                 <div className="bg-gray-100 px-4 py-3 flex justify-between items-center text-xs font-bold text-gray-600 uppercase">
-                                    <span>اسم الطالب ومعرف التليكرام</span>
-                                    <span>حالة الدوام وإرسال سريع</span>
+                                    <span>اسم الطالب</span>
+                                    <span>حالة الدوام</span>
                                 </div>
 
                                 {sortedStudents.map(student => {
                                     const status = dailyAbsences[student.id] || 'present';
-                                    const isLinked = !!student.telegramChatId && student.telegramChatId.trim() !== '';
                                     return (
                                         <div key={student.id} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
-                                            <div className="flex flex-col">
-                                                <span className="font-bold text-gray-800">{student.name}</span>
-                                                <div className="flex items-center gap-1 mt-0.5">
-                                                    {isLinked ? (
-                                                        <span className="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1 font-mono">
-                                                            <Send size={10} className="text-emerald-600" />
-                                                            آيدي: {student.telegramChatId}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-[11px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded">
-                                                            غير مرتبط بالتليكرام
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
+                                            <span className="font-bold text-gray-800">{student.name}</span>
 
-                                            <div className="flex items-center gap-2">
-                                                {status !== 'present' && isLinked && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleSendSingleStudentTelegram(student)}
-                                                        disabled={isSendingTelegram}
-                                                        title="إرسال إشعار تليكرام فردي فوري لهذا الطالب"
-                                                        className="p-1.5 text-cyan-600 hover:text-cyan-800 hover:bg-cyan-50 rounded-lg transition-colors border border-cyan-200 cursor-pointer"
-                                                    >
-                                                        <Send size={16} />
-                                                    </button>
-                                                )}
-
-                                                <button 
-                                                    onClick={() => handleStatusChange(student.id)} 
-                                                    className={`w-24 text-center py-1.5 text-white rounded-lg text-sm font-bold shadow-sm transition-transform active:scale-95 ${STATUS_INFO[status].color}`}
-                                                >
-                                                    {STATUS_INFO[status].text}
-                                                </button>
-                                            </div>
+                                            <button 
+                                                onClick={() => handleStatusChange(student.id)} 
+                                                className={`w-24 text-center py-1.5 text-white rounded-lg text-sm font-bold shadow-sm transition-transform active:scale-95 ${STATUS_INFO[status].color}`}
+                                            >
+                                                {STATUS_INFO[status].text}
+                                            </button>
                                         </div>
                                     );
                                 })}
                             </div>
 
-                            {/* Telegram Control Panel */}
-                            <div className="bg-gradient-to-br from-slate-50 to-cyan-50/50 p-5 rounded-2xl border border-cyan-200/80 shadow-sm space-y-4">
-                                <div className="flex items-center justify-between border-b border-cyan-200/60 pb-3">
-                                    <div className="flex items-center gap-2">
-                                        <Send className="text-cyan-600 h-5 w-5" />
-                                        <h3 className="font-bold text-gray-800 text-lg">خيارات وإشعارات التليكرام</h3>
-                                    </div>
-                                    {settings?.telegramEnabled ? (
-                                        <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full border border-emerald-300 flex items-center gap-1">
-                                            <CheckCircle2 size={13} />
-                                            البوت مفعل
-                                        </span>
-                                    ) : (
-                                        <span className="text-xs bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full border border-amber-300 flex items-center gap-1">
-                                            <AlertTriangle size={13} />
-                                            التليكرام غير مفعّل في الإعدادات
-                                        </span>
-                                    )}
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <label className="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-200 cursor-pointer hover:border-cyan-300 transition-colors">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={sendIndividualTelegram} 
-                                            onChange={e => setSendIndividualTelegram(e.target.checked)}
-                                            className="mt-1 h-4 w-4 text-cyan-600 rounded focus:ring-cyan-500"
-                                        />
-                                        <div>
-                                            <span className="font-bold text-gray-800 text-sm block">إرسال إشعارات فردية للطلاب</span>
-                                            <span className="text-xs text-gray-500">إرسال رسالة تليكرام خاصة لكل طالب غائب عبر Chat ID الخاص به</span>
-                                        </div>
-                                    </label>
-
-                                    <label className="flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-200 cursor-pointer hover:border-cyan-300 transition-colors">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={sendGroupTelegram} 
-                                            onChange={e => setSendGroupTelegram(e.target.checked)}
-                                            className="mt-1 h-4 w-4 text-cyan-600 rounded focus:ring-cyan-500"
-                                        />
-                                        <div>
-                                            <span className="font-bold text-gray-800 text-sm block">إرسال قائمة جماعية لمجموعة التليكرام</span>
-                                            <span className="text-xs text-gray-500">نشر قائمة تحتوي على جميع أسماء الغائبين في مجموعة التليكرام</span>
-                                        </div>
-                                    </label>
-                                </div>
-
-                                {sendGroupTelegram && (
-                                    <div className="bg-white p-3 rounded-xl border border-gray-200">
-                                        <label className="block text-xs font-bold text-gray-700 mb-1">
-                                            معرف القناة أو المجموعة في التليكرام (Group Chat ID):
-                                        </label>
-                                        <input 
-                                            type="text"
-                                            dir="ltr"
-                                            value={customGroupChatId}
-                                            onChange={e => setCustomGroupChatId(e.target.value)}
-                                            placeholder="مثلاً: -1001234567890 أو @school_group"
-                                            className="w-full text-sm p-2 border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-cyan-500 font-mono"
-                                        />
-                                        <p className="text-[11px] text-gray-500 mt-1">
-                                            يمكنك ترك هذا الحقل كما هو لاستخدام معرف المجموعة الافتراضي المكتوب في إعدادات النظام.
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* Action Buttons */}
-                                <div className="pt-2 flex flex-wrap gap-3 justify-center">
-                                    <button 
-                                        onClick={() => handleExecuteAbsenceSaveAndTelegram('save_and_notify')} 
-                                        disabled={isSendingTelegram}
-                                        className="flex-1 min-w-[200px] px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 cursor-pointer"
-                                    >
-                                        {isSendingTelegram ? <Loader2 className="animate-spin h-5 w-5" /> : <Send size={18} />}
-                                        <span>حفظ وإرسال إشعارات التليكرام</span>
-                                    </button>
-
-                                    <button 
-                                        onClick={() => handleExecuteAbsenceSaveAndTelegram('save_only')} 
-                                        disabled={isSendingTelegram}
-                                        className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 cursor-pointer"
-                                    >
-                                        <span>حفظ في النظام فقط</span>
-                                    </button>
-
-                                    <button 
-                                        onClick={() => handleExecuteAbsenceSaveAndTelegram('notify_group_only')} 
-                                        disabled={isSendingTelegram}
-                                        className="px-4 py-3 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 text-sm cursor-pointer"
-                                    >
-                                        <Users size={16} />
-                                        <span>إرسال القائمة الجماعية للمجموعة</span>
-                                    </button>
-
-                                    <button 
-                                        onClick={() => handleExecuteAbsenceSaveAndTelegram('notify_individual_only')} 
-                                        disabled={isSendingTelegram}
-                                        className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 text-sm cursor-pointer"
-                                    >
-                                        <Bot size={16} />
-                                        <span>إرسال الإشعارات الفردية فقط</span>
-                                    </button>
-                                </div>
+                            <div className="flex justify-center pt-2">
+                                <button 
+                                    onClick={handleSaveDaily} 
+                                    className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
+                                >
+                                    <CheckCircle2 size={18} />
+                                    <span>حفظ سجل الغيابات</span>
+                                </button>
                             </div>
                         </div>
                     )}
@@ -691,50 +388,6 @@ export default function AbsenceManager({ principal, settings, classes }: Absence
                             </table>
                         </div>
                      )}
-                </div>
-            )}
-            {telegramLogModal && telegramLogModal.open && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-200">
-                        <div className="bg-cyan-700 text-white p-4 flex justify-between items-center">
-                            <div className="flex items-center gap-2 font-bold text-lg">
-                                <Send size={20} />
-                                <span>{telegramLogModal.title}</span>
-                            </div>
-                            <button 
-                                onClick={() => setTelegramLogModal(null)}
-                                className="p-1 hover:bg-cyan-800 rounded-full transition-colors cursor-pointer"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        <div className="p-5 max-h-[60vh] overflow-y-auto space-y-2 text-sm">
-                            {telegramLogModal.logs.map((log, index) => (
-                                <div 
-                                    key={index} 
-                                    className={`p-2.5 rounded-lg border font-medium text-right ${
-                                        log.startsWith('✅') ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-                                        log.startsWith('❌') ? 'bg-rose-50 text-rose-800 border-rose-200' :
-                                        log.startsWith('⚠️') ? 'bg-amber-50 text-amber-800 border-amber-200' :
-                                        log.startsWith('---') ? 'font-bold text-cyan-800 border-transparent pt-3 pb-1 text-center' :
-                                        'bg-gray-50 text-gray-700 border-gray-200'
-                                    }`}
-                                >
-                                    {log}
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="bg-gray-100 p-4 text-center border-t">
-                            <button 
-                                onClick={() => setTelegramLogModal(null)}
-                                className="px-6 py-2 bg-cyan-700 text-white font-bold rounded-xl hover:bg-cyan-800 transition-colors cursor-pointer"
-                            >
-                                إغلاق
-                            </button>
-                        </div>
-                    </div>
                 </div>
             )}
         </div>

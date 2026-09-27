@@ -27,11 +27,6 @@ export default function StudentRegistrationFormManager() {
     };
 
     const handleExportPdf = async () => {
-        if (!formData.studentPhoneOrTelegram || !formData.studentPhoneOrTelegram.trim()) {
-            alert("تنبيه إلزامي: يرجى كتابة (موبايل الطالب المرتبط بالتليكرام او المعرف) لأنه حقل إلزامي قبل تصدير الاستمارة.");
-            return;
-        }
-
         setIsExporting(true);
         setExportProgress(0);
 
