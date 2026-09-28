@@ -53,7 +53,7 @@ export default function DisciplineReportModal({
 
     const stage = classData?.stage || 'غير محدد';
     const section = classData?.section || 'غير محدد';
-    const schoolName = settings.schoolName || 'متوسطة الحمزة للبنين';
+    const schoolName = settings.schoolName || 'مدرسة ذو الفقار الابتدائية';
     const directorate = settings.directorate || 'المديرية العامة للتربية في محافظة كربلاء المقدسة';
     const academicYear = settings.academicYear || '2026-2027';
     const currentDate = new Date().toLocaleDateString('ar-IQ', {
@@ -307,7 +307,7 @@ export default function DisciplineReportModal({
                                         ) : (
                                             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-900 to-slate-900 text-amber-400 border border-amber-400/40 flex flex-col items-center justify-center p-1 shadow-xs">
                                                 <Award className="w-7 h-7" />
-                                                <span className="text-[9px] font-bold mt-0.5 text-white">متوسطة الحمزة</span>
+                                                <span className="text-[9px] font-bold mt-0.5 text-white">ذو الفقار</span>
                                             </div>
                                         )}
                                     </div>

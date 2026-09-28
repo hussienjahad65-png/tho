@@ -157,6 +157,7 @@ export default function MainApp({ currentUser, onLogout, users, addUser, updateU
                 if (parsed && typeof parsed === 'object') {
                     return {
                         ...parsed,
+                        schoolName: (!parsed.schoolName || parsed.schoolName.includes('الحمزة')) ? 'ادارة مدرسة ذو الفقار الابتدائية' : parsed.schoolName,
                         principalName: 'ثامر جاسم محمد حبل الحجامي',
                         schoolLevel: 'ابتدائية',
                     };
@@ -205,7 +206,7 @@ export default function MainApp({ currentUser, onLogout, users, addUser, updateU
 
     const createDefaultSettingsForPrincipal = (principal: CurrentUser): SchoolSettings => {
         return {
-            schoolName: principal.schoolName || '',
+            schoolName: principal.schoolName || 'ادارة مدرسة ذو الفقار الابتدائية',
             principalName: 'ثامر جاسم محمد حبل الحجامي',
             academicYear: "2025-2026",
             directorate: '',
@@ -266,14 +267,19 @@ export default function MainApp({ currentUser, onLogout, users, addUser, updateU
             settingsCallback = (snapshot: any) => { 
                 const data = snapshot.val();
                 if (data) {
+                    const resolvedSchoolName = (!data.schoolName || data.schoolName.includes('الحمزة'))
+                        ? 'ادارة مدرسة ذو الفقار الابتدائية'
+                        : data.schoolName;
                     const updatedData: SchoolSettings = {
                         ...data,
+                        schoolName: resolvedSchoolName,
                         principalName: 'ثامر جاسم محمد حبل الحجامي',
                         schoolLevel: 'ابتدائية',
                     };
                     setSettings(updatedData);
-                    if (isPrincipal && (data.schoolLevel !== 'ابتدائية' || data.principalName !== 'ثامر جاسم محمد حبل الحجامي')) {
+                    if (isPrincipal && (data.schoolLevel !== 'ابتدائية' || data.principalName !== 'ثامر جاسم محمد حبل الحجامي' || data.schoolName !== resolvedSchoolName)) {
                         settingsRef.update({
+                            schoolName: resolvedSchoolName,
                             principalName: 'ثامر جاسم محمد حبل الحجامي',
                             schoolLevel: 'ابتدائية',
                         }).catch(() => {});

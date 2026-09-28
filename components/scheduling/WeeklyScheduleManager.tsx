@@ -1994,7 +1994,7 @@ export default function WeeklyScheduleManager({
             .filter(c => (c.stage || '').trim() === currentStage.trim())
             .sort((a, b) => compareSections(a.section || '', b.section || ''));
 
-        const schoolName = settings.schoolName || 'متوسطة الحمزة للبنين';
+        const schoolName = settings.schoolName || 'مدرسة ذو الفقار الابتدائية';
 
         return (
             <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center z-[140] p-3 sm:p-5 overflow-y-auto">

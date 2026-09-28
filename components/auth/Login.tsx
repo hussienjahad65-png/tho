@@ -35,7 +35,7 @@ export default function Login({ onLogin, isAuthReady = true }: LoginProps) {
                 <div className="text-center">
                     <img src="https://i.imgur.com/pW7R8ot.jpeg" alt="شعار المدرسة" className="mx-auto w-40 h-40 mb-4 object-contain rounded-full shadow-md" />
                     <h1 className="text-4xl font-extrabold text-gray-800">
-                        ادارة متوسطة الحمزة للبنين
+                        ادارة مدرسة ذو الفقار الابتدائية
                     </h1>
                 </div>
 

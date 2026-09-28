@@ -76,7 +76,7 @@ export default function SeatingChartManagerV2({ principal, classes, settings }: 
     const [exportSettings, setExportSettings] = useState({
         showBackground: true,
         headerText: 'وزارة التربية - المديرية العامة لتربية بغداد',
-        schoolName: principal.schoolName || 'متوسطة الحمزة للبنين',
+        schoolName: principal.schoolName || 'مدرسة ذو الفقار الابتدائية',
         academicYear: '2024 - 2025'
     });
 

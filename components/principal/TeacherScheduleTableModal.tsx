@@ -122,7 +122,7 @@ export default function TeacherScheduleTableModal({
                         <div>
                             <h3 className="text-xl font-black tracking-wide">جدول توزيع الحصص والمواد والشعب للمدرسين</h3>
                             <p className="text-xs text-blue-200 mt-0.5 font-medium">
-                                {settings?.schoolName || 'متوسطة الحمزة للبنين'} — العام الدراسي: {settings?.academicYear || '2025-2026'}
+                                {settings?.schoolName || 'مدرسة ذو الفقار الابتدائية'} — العام الدراسي: {settings?.academicYear || '2025-2026'}
                             </p>
                         </div>
                     </div>

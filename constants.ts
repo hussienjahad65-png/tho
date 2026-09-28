@@ -13,7 +13,7 @@ export const GOVERNORATES = [
 ];
 
 export const DEFAULT_SCHOOL_SETTINGS: SchoolSettings = {
-    schoolName: '',
+    schoolName: 'ادارة مدرسة ذو الفقار الابتدائية',
     principalName: 'ثامر جاسم محمد حبل الحجامي',
     academicYear: '2025-2026',
     directorate: '',

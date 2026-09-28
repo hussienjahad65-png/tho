@@ -7,7 +7,7 @@ const PRINCIPAL_USER: User = {
     id: 'principal_al_hamza',
     role: 'principal',
     name: 'ثامر جاسم محمد حبل الحجامي',
-    schoolName: 'متوسطة الحمزة للبنين',
+    schoolName: 'ادارة مدرسة ذو الفقار الابتدائية',
     schoolLevel: 'ابتدائية',
     code: 'Fwg!&ui70',
     studentCodeLimit: 1000
@@ -31,6 +31,7 @@ export default function useAuth() {
                     const updatedPrincipal = {
                         ...parsedUser,
                         name: PRINCIPAL_USER.name,
+                        schoolName: PRINCIPAL_USER.schoolName,
                         schoolLevel: PRINCIPAL_USER.schoolLevel,
                     };
                     window.localStorage.setItem('current_user', JSON.stringify(updatedPrincipal));

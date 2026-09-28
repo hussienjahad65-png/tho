@@ -28,7 +28,7 @@ export default function PromotionLogPDFPage({ settings, data, stage }: Promotion
         <div className="w-[794px] h-[1123px] p-8 bg-white flex flex-col font-['Cairo']" dir="rtl">
             <header className="flex justify-between items-center mb-4">
                 <div className="text-center font-bold">
-                    <p>إدارة : {settings.directorate || 'متوسطة الحمزة'}</p>
+                    <p>إدارة : {settings.schoolName || settings.directorate || 'مدرسة ذو الفقار الابتدائية'}</p>
                     <p>{schoolGenderText}</p>
                 </div>
                 <div className="text-center">

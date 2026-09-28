@@ -36,7 +36,7 @@ export default function SubjectCommitteesPDFPage({
     pageNumber,
     totalPages
 }: SubjectCommitteesPDFPageProps) {
-    const schoolName = settings?.schoolName || 'متوسطة الحمزة للبنين';
+    const schoolName = settings?.schoolName || 'مدرسة ذو الفقار الابتدائية';
     const academicYear = settings?.academicYear || '2025-2026';
 
     return (

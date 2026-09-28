@@ -143,7 +143,7 @@ export function exportTeachersToExcel(
     tableData: TeacherTableRowData[],
     settings?: SchoolSettings
 ): void {
-    const schoolName = settings?.schoolName || 'متوسطة الحمزة للبنين';
+    const schoolName = settings?.schoolName || 'مدرسة ذو الفقار الابتدائية';
     const directorate = settings?.directorate || 'المديرية العامة للتربية';
     const academicYear = settings?.academicYear || '2025-2026';
     const dateStr = new Date().toLocaleDateString('ar-IQ');
@@ -234,7 +234,7 @@ export async function exportTeachersToWord(
     tableData: TeacherTableRowData[],
     settings?: SchoolSettings
 ): Promise<void> {
-    const schoolName = settings?.schoolName || 'متوسطة الحمزة للبنين';
+    const schoolName = settings?.schoolName || 'مدرسة ذو الفقار الابتدائية';
     const directorate = settings?.directorate || 'المديرية العامة للتربية';
     const academicYear = settings?.academicYear || '2025-2026';
     const principalName = settings?.principalName || '';
